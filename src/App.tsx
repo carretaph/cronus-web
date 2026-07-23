@@ -1,81 +1,132 @@
-import Navbar from './components/Navbar'
-import WhyCronus from './components/WhyCronus'
-import houseImage from './assets/modern-house.png'
-import WindowsSection from './components/WindowsSection'
-import DoorsSection from './components/DoorsSection'
-import ProjectsSection from './components/ProjectsSection'
-import StatsSection from './components/StatsSection'
-import TestimonialsSection from './components/Testimonials'
-import CTASection from './components/CTASection'
-import Footer from './components/Footer'
+import { Route, Routes } from 'react-router-dom'
 
-function App() {
+import Home from './pages/Home'
+import Windows from './pages/Windows'
+import Doors from './pages/Doors'
+import Projects from './pages/Projects'
+import Financing from './pages/Financing'
+import ServiceAreas from './pages/ServiceAreas'
+import Contact from './pages/Contact'
+import About from './pages/About'
+
+import Login from './pages/Login'
+import Portal from './pages/Portal'
+import Customers from './pages/Customers'
+import Quotes from './pages/Quotes'
+import NewQuote from './pages/NewQuote'
+
+import ProtectedRoute from './components/ProtectedRoute'
+import PortalLayout from './components/PortalLayout'
+import OpeningManager from './pages/OpeningManager'
+import NewContract from './pages/NewContract'
+import Contracts from './pages/Contracts'
+import ContractCustomer from './pages/contracts/ContractCustomer'
+import ContractProject from './pages/contracts/ContractProject'
+import ContractProducts from './pages/contracts/ContractProducts'
+import ContractPayment from './pages/contracts/ContractPayment'
+import ContractSchedule from './pages/contracts/ContractSchedule'
+import ContractTerms from './pages/contracts/ContractTerms'
+import ContractSignatures from './pages/contracts/ContractSignatures'
+import ContractComplete from './pages/contracts/ContractComplete'
+
+export default function App() {
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar />
+    <Routes>
+      {/* Public website */}
+      <Route path="/" element={<Home />} />
+      <Route path="/windows" element={<Windows />} />
+      <Route path="/doors" element={<Doors />} />
+      <Route path="/projects" element={<Projects />} />
+      <Route
+        path="/financing"
+        element={<Financing />}
+      />
+      <Route
+        path="/service-areas"
+        element={<ServiceAreas />}
+      />
+      <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<Contact />} />
 
-      <main id="home" className="min-h-screen px-8 pt-32">
-        <section className="mx-auto flex max-w-7xl flex-col items-center pt-24 text-center lg:pt-28">
-          <h1
-            className="
-              text-[48px]
-              font-extralight
-              leading-none
-              tracking-[-0.04em]
-              text-[#8A8A8A]
-              sm:text-[56px]
-              lg:text-[64px]
-            "
-          >
-            Windows & Doors
-          </h1>
+      {/* Login */}
+      <Route path="/login" element={<Login />} />
 
-          <p className="mt-7 text-[22px] font-light tracking-wide text-[#A0A0A0]">
-            Premium Service. Exceptional Results.
-          </p>
+      {/* Private portal */}
+      <Route
+        path="/portal"
+        element={
+          <ProtectedRoute>
+            <PortalLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Portal />} />
 
-          <a
-            href="#contact"
-            className="
-              mt-9
-              inline-flex
-              items-center
-              justify-center
-              rounded-full
-              bg-[#7A7A7A]
-              px-10
-              py-4
-              text-[16px]
-              font-medium
-              !text-white
-              transition-colors
-              duration-300
-              hover:bg-[#686868]
-            "
-          >
-            Request a Consultation
-          </a>
+        <Route
+          path="customers"
+          element={<Customers />}
+        />
 
-          <div className="mt-10 w-full overflow-hidden rounded-[24px]">
-            <img
-              src={houseImage}
-              alt="Luxury modern home featuring expansive windows and doors"
-              className="h-[720px] w-full object-cover"
-            />
-          </div>
-        </section>
-      </main>
+        <Route
+          path="quotes"
+          element={<Quotes />}
+        />
 
-      <WhyCronus />
-      <WindowsSection />
-      <DoorsSection />
-      <ProjectsSection />
-      <StatsSection />
-      <TestimonialsSection />
-      <CTASection />
-      <Footer />
-    </div>
+        <Route
+          path="contracts"
+          element={<Contracts />}
+        />
+
+        <Route
+          path="contracts/project"
+          element={<ContractProject />}
+        />
+
+        <Route
+          path="contracts/products"
+          element={<ContractProducts />}
+        />
+
+        <Route
+          path="contracts/payment"
+          element={<ContractPayment />}
+        />
+
+        <Route
+          path="contracts/schedule"
+          element={<ContractSchedule />}
+        />
+
+        <Route
+          path="contracts/terms"
+          element={<ContractTerms />}
+        />
+
+        <Route
+          path="contracts/complete"
+          element={<ContractComplete />}
+        />
+
+        <Route
+          path="contracts/signatures"
+          element={<ContractSignatures />}
+        />
+
+        <Route
+          path="quotes/new"
+          element={<NewQuote />}
+        />
+
+        <Route
+          path="contracts/new"
+          element={<ContractCustomer />}
+        />
+
+        <Route
+          path="quotes/new/openings"
+          element={<OpeningManager />}
+        />
+      </Route>
+    </Routes>
   )
 }
-
-export default App

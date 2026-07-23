@@ -1,50 +1,49 @@
+import { NavLink } from 'react-router-dom'
 import cronusLogo from '../assets/cronus-logo.png'
 
 const navItems = [
-  'Home',
-  'Windows',
-  'Doors',
-  'Projects',
-  'Financing',
-  'Service Areas',
-  'About',
-  'Contact',
+  { label: 'Home', to: '/' },
+  { label: 'Windows', to: '/windows' },
+  { label: 'Doors', to: '/doors' },
+  { label: 'Projects', to: '/projects' },
+  { label: 'Financing', to: '/financing' },
+  { label: 'Service Areas', to: '/service-areas' },
+  { label: 'About', to: '/about' },
+  { label: 'Contact', to: '/contact' },
 ]
 
 function Navbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-[#F2F2F2] bg-white">
       <div className="mx-auto flex h-50 max-w-[1550px] items-center justify-between px-10 lg:px-16">
-        <a href="#home" aria-label="Cronus home" className="shrink-0">
+        <NavLink to="/" aria-label="Cronus Home" className="shrink-0">
           <img
             src={cronusLogo}
             alt="Cronus Windows and Doors"
             className="h-45 w-auto object-contain"
           />
-        </a>
+        </NavLink>
 
         <nav className="hidden items-center gap-10 lg:flex">
           {navItems.map((item) => (
-            <a
-              key={item}
-              href={`#${item.toLowerCase().replace(/\s+/g, '-')}`}
-              className="
-                text-[15px]
-                font-light
-                tracking-wide
-                !text-[#9A9A9A]
-                transition-colors
-                duration-300
-                hover:!text-[#666666]
-              "
+            <NavLink
+              key={item.label}
+              to={item.to}
+              className={({ isActive }) =>
+                `text-[15px] font-light tracking-wide transition-colors duration-300 ${
+                  isActive
+                    ? '!text-[#666666]'
+                    : '!text-[#9A9A9A] hover:!text-[#666666]'
+                }`
+              }
             >
-              {item}
-            </a>
+              {item.label}
+            </NavLink>
           ))}
         </nav>
 
-        <a
-          href="#contact"
+        <NavLink
+          to="/contact"
           className="
             hidden
             items-center
@@ -63,7 +62,7 @@ function Navbar() {
           "
         >
           Get an Estimate
-        </a>
+        </NavLink>
       </div>
     </header>
   )
