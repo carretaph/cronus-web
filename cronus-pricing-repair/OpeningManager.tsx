@@ -193,6 +193,8 @@ const colorOptions: ColorOption[] = [
   'Custom',
 ]
 
+const yesNoOptions: YesNoOption[] = ['No', 'Yes']
+
 const swingDirectionOptions: SwingDirection[] = [
   'In Swing',
   'Out Swing',
@@ -234,8 +236,18 @@ function isWindowProduct(productCategory: ProductCategory) {
   return !doorProductCategories.includes(productCategory)
 }
 
+function parseMeasurement(value: string) {
+  const parsedValue = Number.parseFloat(
+    value.replace(/[^0-9.]/g, ''),
+  )
+
+  return Number.isFinite(parsedValue)
+    ? parsedValue
+    : 0
+}
+
 function calculateProductPrice(
-  product: OpeningProduct,
+  product: Product,
   impact: boolean,
 ): ProductPriceBreakdown {
   const windowProduct = isWindowProduct(

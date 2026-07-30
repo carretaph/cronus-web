@@ -14,12 +14,9 @@ import Portal from './pages/Portal'
 import Customers from './pages/Customers'
 import Quotes from './pages/Quotes'
 import NewQuote from './pages/NewQuote'
-
-import ProtectedRoute from './components/ProtectedRoute'
-import PortalLayout from './components/PortalLayout'
 import OpeningManager from './pages/OpeningManager'
-import NewContract from './pages/NewContract'
 import Contracts from './pages/Contracts'
+
 import ContractCustomer from './pages/contracts/ContractCustomer'
 import ContractProject from './pages/contracts/ContractProject'
 import ContractProducts from './pages/contracts/ContractProducts'
@@ -28,28 +25,57 @@ import ContractSchedule from './pages/contracts/ContractSchedule'
 import ContractTerms from './pages/contracts/ContractTerms'
 import ContractSignatures from './pages/contracts/ContractSignatures'
 import ContractComplete from './pages/contracts/ContractComplete'
+import ContractDocument from './pages/contracts/ContractDocument'
+
+import ProtectedRoute from './components/ProtectedRoute'
+import PortalLayout from './components/PortalLayout'
 
 export default function App() {
   return (
     <Routes>
       {/* Public website */}
       <Route path="/" element={<Home />} />
-      <Route path="/windows" element={<Windows />} />
-      <Route path="/doors" element={<Doors />} />
-      <Route path="/projects" element={<Projects />} />
+
+      <Route
+        path="/windows"
+        element={<Windows />}
+      />
+
+      <Route
+        path="/doors"
+        element={<Doors />}
+      />
+
+      <Route
+        path="/projects"
+        element={<Projects />}
+      />
+
       <Route
         path="/financing"
         element={<Financing />}
       />
+
       <Route
         path="/service-areas"
         element={<ServiceAreas />}
       />
-      <Route path="/about" element={<About />} />
-      <Route path="/contact" element={<Contact />} />
+
+      <Route
+        path="/about"
+        element={<About />}
+      />
+
+      <Route
+        path="/contact"
+        element={<Contact />}
+      />
 
       {/* Login */}
-      <Route path="/login" element={<Login />} />
+      <Route
+        path="/login"
+        element={<Login />}
+      />
 
       {/* Private portal */}
       <Route
@@ -60,56 +86,22 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Portal />} />
+        {/* Portal dashboard */}
+        <Route
+          index
+          element={<Portal />}
+        />
 
+        {/* Customers */}
         <Route
           path="customers"
           element={<Customers />}
         />
 
+        {/* Quotes */}
         <Route
           path="quotes"
           element={<Quotes />}
-        />
-
-        <Route
-          path="contracts"
-          element={<Contracts />}
-        />
-
-        <Route
-          path="contracts/project"
-          element={<ContractProject />}
-        />
-
-        <Route
-          path="contracts/products"
-          element={<ContractProducts />}
-        />
-
-        <Route
-          path="contracts/payment"
-          element={<ContractPayment />}
-        />
-
-        <Route
-          path="contracts/schedule"
-          element={<ContractSchedule />}
-        />
-
-        <Route
-          path="contracts/terms"
-          element={<ContractTerms />}
-        />
-
-        <Route
-          path="contracts/complete"
-          element={<ContractComplete />}
-        />
-
-        <Route
-          path="contracts/signatures"
-          element={<ContractSignatures />}
         />
 
         <Route
@@ -118,13 +110,67 @@ export default function App() {
         />
 
         <Route
+          path="quotes/new/openings"
+          element={<OpeningManager />}
+        />
+
+        {/* Contracts */}
+        <Route
+          path="contracts"
+          element={<Contracts />}
+        />
+
+        {/* Contract wizard - Step 1 */}
+        <Route
           path="contracts/new"
           element={<ContractCustomer />}
         />
 
+        {/* Contract wizard - Step 2 */}
         <Route
-          path="quotes/new/openings"
-          element={<OpeningManager />}
+          path="contracts/project"
+          element={<ContractProject />}
+        />
+
+        {/* Contract wizard - Step 3 */}
+        <Route
+          path="contracts/products"
+          element={<ContractProducts />}
+        />
+
+        {/* Contract wizard - Step 4 */}
+        <Route
+          path="contracts/payment"
+          element={<ContractPayment />}
+        />
+
+        {/* Contract wizard - Step 5 */}
+        <Route
+          path="contracts/schedule"
+          element={<ContractSchedule />}
+        />
+
+        {/* Contract wizard - Step 6 */}
+        <Route
+          path="contracts/terms"
+          element={<ContractTerms />}
+        />
+
+        {/* Contract wizard - Step 7 */}
+        <Route
+          path="contracts/signatures"
+          element={<ContractSignatures />}
+        />
+
+        {/* Contract wizard - Step 8 */}
+        <Route
+          path="contracts/complete"
+          element={<ContractComplete />}
+        />
+
+        <Route
+          path="contracts/document"
+          element={<ContractDocument />}
         />
       </Route>
     </Routes>

@@ -62,7 +62,19 @@ const doorCategories = new Set([
   'Entry Door',
 ])
 
-function calculateProductPrice(
+function parseMeasurement(value?: string) {
+  if (!value) {
+    return 0
+  }
+
+  const parsed = Number.parseFloat(
+    value.replace(/[^0-9.]/g, ''),
+  )
+
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+ffunction calculateProductPrice(
   opening: Opening,
   product: Product,
 ) {
@@ -73,7 +85,7 @@ function calculateProductPrice(
     width: product.width,
     height: product.height,
     isDoor,
-    impact: Boolean(opening.impact),
+    impact: opening.impact,
   }).total
 }
 

@@ -1,19 +1,21 @@
 import {
   Document,
   Image,
-  Link,
   Page,
   StyleSheet,
   Text,
   View,
 } from '@react-pdf/renderer'
 
-import cronusLogo from '../../assets/cronus-logo.png'
-import casementImage from '../../assets/windows/casement.png'
-import doubleHungImage from '../../assets/windows/double-hung.png'
-import pictureImage from '../../assets/windows/picture.png'
-import slidingImage from '../../assets/windows/sliding.png'
+import awningImage from '../../assets/windows/Plygem/awning.png'
+import casementImage from '../../assets/windows/Plygem/casement.png'
+import doubleHungImage from '../../assets/windows/Plygem/doublehung.png'
+import geometricImage from '../../assets/windows/Plygem/geometric.png'
+import pictureImage from '../../assets/windows/Plygem/picture.png'
+import singleHungImage from '../../assets/windows/Plygem/singlehung.png'
+import slidingImage from '../../assets/windows/Plygem/sliding.png'
 import doorImage from '../../assets/door-hero.png'
+import cronusLogo from '../../assets/cronus-logo.png'
 
 type EstimateCustomer = {
   name: string
@@ -347,19 +349,42 @@ function money(value: number) {
 }
 
 function getProductImage(category: string) {
-  const normalized = category.toLowerCase()
+  const normalized = category
+    .toLowerCase()
+    .replace(/[*_()-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 
   if (
     normalized.includes('sliding door') ||
     normalized.includes('french door') ||
     normalized.includes('entry door') ||
-    normalized.includes('door')
+    normalized.includes('patio door') ||
+    normalized === 'door'
   ) {
     return doorImage
   }
 
+  if (normalized.includes('awning')) {
+    return awningImage
+  }
+
   if (normalized.includes('casement')) {
     return casementImage
+  }
+
+  if (
+    normalized.includes('double hung') ||
+    normalized.includes('doublehung')
+  ) {
+    return doubleHungImage
+  }
+
+  if (
+    normalized.includes('geometric') ||
+    normalized.includes('shape')
+  ) {
+    return geometricImage
   }
 
   if (
@@ -370,13 +395,20 @@ function getProductImage(category: string) {
   }
 
   if (
+    normalized.includes('single hung') ||
+    normalized.includes('singlehung')
+  ) {
+    return singleHungImage
+  }
+
+  if (
     normalized.includes('sliding') ||
     normalized.includes('slider')
   ) {
     return slidingImage
   }
 
-  return doubleHungImage
+  return pictureImage
 }
 
 function productDetails(product: EstimateProduct) {
@@ -398,7 +430,6 @@ export default function EstimatePDF({
   customer,
   project,
   products,
-  discounts,
   windowCount,
   doorCount,
   retailPrice,

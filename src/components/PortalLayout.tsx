@@ -110,14 +110,6 @@ export default function PortalLayout() {
             />
 
             <PortalNavLink
-              to="/portal/leads"
-              label="Leads"
-              icon={<LeadsIcon />}
-              onClick={closeMobileMenu}
-              disabled
-            />
-
-            <PortalNavLink
               to="/portal/quotes"
               label="Quotes"
               icon={<QuoteIcon />}
@@ -286,24 +278,6 @@ function CustomersIcon() {
       <path d="M3.5 19c.5-4 2.5-6 5.5-6s5 2 5.5 6" />
       <circle cx="17" cy="9" r="2.4" />
       <path d="M15.5 14.2c3.2-.8 5.1.9 5.5 4.3" />
-    </svg>
-  )
-}
-
-function LeadsIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="20"
-      height="20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-    >
-      <path d="M4 5h16v11H8l-4 4z" />
-      <path d="M8 9h8" />
-      <path d="M8 12h5" />
     </svg>
   )
 }

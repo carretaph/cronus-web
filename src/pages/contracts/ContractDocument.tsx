@@ -73,7 +73,7 @@ function calculateProductPrice(
     width: product.width,
     height: product.height,
     isDoor,
-    impact: Boolean(opening.impact),
+    impact: opening.impact ?? false,
   }).total
 }
 

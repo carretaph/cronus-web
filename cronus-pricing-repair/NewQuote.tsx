@@ -84,6 +84,8 @@ const quotesStorageKey = 'cronus_quotes_v1'
 const contractHandoffStorageKey =
   'cronus_contract_handoff_v1'
 
+const contractsStorageKey = 'cronus_contracts_v1'
+
 function loadStoredQuotes(): StoredQuote[] {
   try {
     const storedQuotes = localStorage.getItem(
@@ -236,6 +238,14 @@ const doorCategories = new Set([
   'Entry Door',
 ])
 
+function parseMeasurement(value: string) {
+  const parsed = Number.parseFloat(
+    value.replace(/[^0-9.]/g, ''),
+  )
+
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 type PricedProduct = {
   id: string
   openingNumber: string
@@ -258,20 +268,6 @@ function calculateProductPrice(
     isDoor,
     impact: opening.impact,
   }).total
-}
-
-function getPricedProducts(
-  openings: Opening[],
-): PricedProduct[] {
-  return openings.flatMap((opening) =>
-    opening.products.map((product) => ({
-      id: product.id,
-      openingNumber: opening.openingNumber,
-      label: product.label,
-      productCategory: product.productCategory,
-      price: calculateProductPrice(opening, product),
-    })),
-  )
 }
 
 function calculateBogoSavings(
