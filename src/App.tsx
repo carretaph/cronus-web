@@ -16,6 +16,7 @@ import Quotes from './pages/Quotes'
 import NewQuote from './pages/NewQuote'
 import OpeningManager from './pages/OpeningManager'
 import Contracts from './pages/Contracts'
+import PricingEngine from './pages/PricingEngine'
 
 import ContractCustomer from './pages/contracts/ContractCustomer'
 import ContractProject from './pages/contracts/ContractProject'
@@ -34,7 +35,10 @@ export default function App() {
   return (
     <Routes>
       {/* Public website */}
-      <Route path="/" element={<Home />} />
+      <Route
+        path="/"
+        element={<Home />}
+      />
 
       <Route
         path="/windows"
@@ -118,6 +122,12 @@ export default function App() {
         <Route
           path="contracts"
           element={<Contracts />}
+        />
+
+        {/* Pricing Engine */}
+        <Route
+          path="pricing"
+          element={<PricingEngine />}
         />
 
         {/* Contract wizard - Step 1 */}

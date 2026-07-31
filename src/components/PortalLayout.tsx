@@ -87,9 +87,10 @@ export default function PortalLayout() {
             bg-white p-5 transition-transform duration-300
             lg:sticky lg:top-[78px] lg:h-[calc(100vh-78px)]
             lg:shrink-0 lg:translate-x-0
-            ${mobileMenuOpen
-              ? 'translate-x-0'
-              : '-translate-x-full'
+            ${
+              mobileMenuOpen
+                ? 'translate-x-0'
+                : '-translate-x-full'
             }
           `}
         >
@@ -125,10 +126,9 @@ export default function PortalLayout() {
 
             <PortalNavLink
               to="/portal/pricing"
-              label="Price Database"
+              label="Pricing Engine"
               icon={<DatabaseIcon />}
               onClick={closeMobileMenu}
-              disabled
             />
 
             <PortalNavLink
@@ -211,10 +211,11 @@ function PortalNavLink({
         `
           flex items-center gap-3 rounded-xl px-4 py-3.5
           text-sm font-medium transition
-          ${isActive
-          ? 'bg-[#222222] text-white'
-          : 'text-[#666666] hover:bg-[#F5F3EE] hover:text-[#333333]'
-        }
+          ${
+            isActive
+              ? 'bg-[#222222] text-white'
+              : 'text-[#666666] hover:bg-[#F5F3EE] hover:text-[#333333]'
+          }
         `
       }
     >
@@ -255,10 +256,37 @@ function DashboardIcon() {
       stroke="currentColor"
       strokeWidth="1.7"
     >
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <rect
+        x="3"
+        y="3"
+        width="7"
+        height="7"
+        rx="1"
+      />
+
+      <rect
+        x="14"
+        y="3"
+        width="7"
+        height="7"
+        rx="1"
+      />
+
+      <rect
+        x="3"
+        y="14"
+        width="7"
+        height="7"
+        rx="1"
+      />
+
+      <rect
+        x="14"
+        y="14"
+        width="7"
+        height="7"
+        rx="1"
+      />
     </svg>
   )
 }
@@ -274,9 +302,20 @@ function CustomersIcon() {
       strokeWidth="1.7"
       strokeLinecap="round"
     >
-      <circle cx="9" cy="8" r="3" />
+      <circle
+        cx="9"
+        cy="8"
+        r="3"
+      />
+
       <path d="M3.5 19c.5-4 2.5-6 5.5-6s5 2 5.5 6" />
-      <circle cx="17" cy="9" r="2.4" />
+
+      <circle
+        cx="17"
+        cy="9"
+        r="2.4"
+      />
+
       <path d="M15.5 14.2c3.2-.8 5.1.9 5.5 4.3" />
     </svg>
   )
@@ -330,7 +369,13 @@ function DatabaseIcon() {
       stroke="currentColor"
       strokeWidth="1.7"
     >
-      <ellipse cx="12" cy="5" rx="8" ry="3" />
+      <ellipse
+        cx="12"
+        cy="5"
+        rx="8"
+        ry="3"
+      />
+
       <path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
       <path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
     </svg>
@@ -348,8 +393,18 @@ function UsersIcon() {
       strokeWidth="1.7"
       strokeLinecap="round"
     >
-      <circle cx="8" cy="8" r="3" />
-      <circle cx="17" cy="9" r="2.5" />
+      <circle
+        cx="8"
+        cy="8"
+        r="3"
+      />
+
+      <circle
+        cx="17"
+        cy="9"
+        r="2.5"
+      />
+
       <path d="M2.5 19c.5-4 2.5-6 5.5-6s5 2 5.5 6" />
       <path d="M14.5 14.5c3.5-.8 6.2 1 7 4.5" />
     </svg>

@@ -15,14 +15,23 @@ type LoginResult = {
 
 const authorizedUsers = [
   {
-    email: 'admin@cronuswindows.com',
-    password: 'Cronus2026!',
-    name: 'Cronus Administrator',
+    email: 'carretaph@gmail.com',
+    password: 'Cronus123@',
+    name: 'Alberto Perez',
+    role: 'admin' as const,
+  },
+  {
+    email: 'daniel.cronus@gmail.com',
+    password: 'Cronus123@',
+    name: 'Daniel',
     role: 'admin' as const,
   },
 ]
 
-export function loginUser(email: string, password: string): LoginResult {
+export function loginUser(
+  email: string,
+  password: string,
+): LoginResult {
   const normalizedEmail = email.trim().toLowerCase()
 
   const matchingUser = authorizedUsers.find(
@@ -45,7 +54,10 @@ export function loginUser(email: string, password: string): LoginResult {
   }
 
   localStorage.setItem(AUTH_STORAGE_KEY, 'true')
-  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(authenticatedUser))
+  localStorage.setItem(
+    USER_STORAGE_KEY,
+    JSON.stringify(authenticatedUser),
+  )
 
   return {
     success: true,
@@ -59,11 +71,15 @@ export function logoutUser() {
 }
 
 export function isAuthenticated() {
-  return localStorage.getItem(AUTH_STORAGE_KEY) === 'true'
+  return (
+    localStorage.getItem(AUTH_STORAGE_KEY) === 'true'
+  )
 }
 
 export function getAuthenticatedUser(): CronusUser | null {
-  const storedUser = localStorage.getItem(USER_STORAGE_KEY)
+  const storedUser = localStorage.getItem(
+    USER_STORAGE_KEY,
+  )
 
   if (!storedUser) {
     return null
