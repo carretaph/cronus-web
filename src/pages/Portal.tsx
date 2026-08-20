@@ -1,11 +1,25 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { getAuthenticatedUser } from '../auth/auth'
-import { getCustomers } from './customerdata'
+import { getCustomers } from '../services/customersApi'
 
 export default function Portal() {
-  const customers = getCustomers()
+  const [customerCount, setCustomerCount] = useState(0)
   const user = getAuthenticatedUser()
+
+  useEffect(() => {
+    async function loadCustomerCount() {
+      try {
+        const customers = await getCustomers()
+        setCustomerCount(customers.length)
+      } catch (error) {
+        console.error('Unable to load customer count:', error)
+      }
+    }
+
+    void loadCustomerCount()
+  }, [])
 
   const firstName =
     user?.name === 'Cronus Administrator'
@@ -50,7 +64,7 @@ export default function Portal() {
         <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           <DashboardCard
             title="Customers"
-            value={String(customers.length)}
+            value={String(customerCount)}
             description="Total customer records"
           />
 

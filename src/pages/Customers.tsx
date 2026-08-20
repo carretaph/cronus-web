@@ -1,13 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 
 import CustomerTable from '../components/customers/CustomerTable'
 
 import {
-  createCustomer,
-  deleteCustomer,
-  getCustomers,
-} from './customerdata'
+  createCustomer as createCustomerApi,
+  deleteCustomer as deleteCustomerApi,
+  getCustomers as getCustomersApi,
+} from '../services/customersApi'
 
 import type { Customer } from './customerdata'
 
@@ -37,7 +37,27 @@ const emptyCustomerForm: CustomerFormState = {
 
 export default function Customers() {
   const [customers, setCustomers] =
-    useState<Customer[]>(getCustomers)
+    useState<Customer[]>([])
+
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadCustomers() {
+      try {
+        const apiCustomers = await getCustomersApi()
+        setCustomers(apiCustomers)
+      } catch (error) {
+        console.error('Unable to load customers:', error)
+        setErrorMessage(
+          'Unable to load customers. Please try again.',
+        )
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    void loadCustomers()
+  }, [])
 
   const [searchTerm, setSearchTerm] = useState('')
   const [showCustomerForm, setShowCustomerForm] =
@@ -97,7 +117,7 @@ export default function Customers() {
     setShowCustomerForm(false)
   }
 
-  function handleSubmit(
+  async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault()
@@ -115,28 +135,37 @@ export default function Customers() {
       return
     }
 
-    const newCustomer = createCustomer({
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      phone: form.phone.trim(),
-      email: form.email.trim(),
-      address: form.address.trim(),
-      city: form.city.trim(),
-      state: form.state.trim().toUpperCase(),
-      zipCode: form.zipCode.trim(),
-      notes: form.notes.trim(),
-    })
+    try {
+      const newCustomer = await createCustomerApi({
+        id: crypto.randomUUID(),
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        address: form.address.trim(),
+        city: form.city.trim(),
+        state: form.state.trim().toUpperCase(),
+        zipCode: form.zipCode.trim(),
+        notes: form.notes.trim(),
+        createdAt: new Date().toISOString(),
+      })
 
-    setCustomers((currentCustomers) => [
-      newCustomer,
-      ...currentCustomers,
-    ])
+      setCustomers((currentCustomers) => [
+        newCustomer,
+        ...currentCustomers,
+      ])
 
-    setForm(emptyCustomerForm)
-    setShowCustomerForm(false)
+      setForm(emptyCustomerForm)
+      setShowCustomerForm(false)
+    } catch (error) {
+      console.error('Unable to create customer:', error)
+      setErrorMessage(
+        'Unable to save customer. Please try again.',
+      )
+    }
   }
 
-  function handleDelete(customerId: string) {
+  async function handleDelete(customerId: string) {
     const confirmed = window.confirm(
       'Are you sure you want to delete this customer?',
     )
@@ -145,13 +174,20 @@ export default function Customers() {
       return
     }
 
-    deleteCustomer(customerId)
+    try {
+      await deleteCustomerApi(customerId)
 
-    setCustomers((currentCustomers) =>
-      currentCustomers.filter(
-        (customer) => customer.id !== customerId,
-      ),
-    )
+      setCustomers((currentCustomers) =>
+        currentCustomers.filter(
+          (customer) => customer.id !== customerId,
+        ),
+      )
+    } catch (error) {
+      console.error('Unable to delete customer:', error)
+      window.alert(
+        'Unable to delete customer. Please try again.',
+      )
+    }
   }
 
   return (
@@ -214,7 +250,13 @@ export default function Customers() {
           </div>
         </div>
 
-        {filteredCustomers.length > 0 ? (
+        {isLoading ? (
+          <div className="mt-6 flex min-h-[360px] items-center justify-center rounded-[24px] border border-[#E8E5DE] bg-white px-6 text-center">
+            <p className="text-sm text-[#888888]">
+              Loading customers...
+            </p>
+          </div>
+        ) : filteredCustomers.length > 0 ? (
           <CustomerTable
             customers={filteredCustomers}
             onDelete={handleDelete}

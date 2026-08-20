@@ -4,7 +4,8 @@ import { pdf } from '@react-pdf/renderer'
 
 import EstimatePDF from '../components/pdf/EstimatePDF'
 
-import { getCustomers } from './customerdata'
+import { getCustomers } from '../services/customersApi'
+import type { ApiCustomer } from '../services/customersApi'
 import OpeningManager from './OpeningManager'
 import type { Opening } from './OpeningManager'
 import { calculateCoreProductPrice } from '../services/pricingService'
@@ -540,8 +541,22 @@ function saveCompleteQuoteDraft(
 
 export default function NewQuote() {
   const navigate = useNavigate()
-  const customers = getCustomers()
+  const [customers, setCustomers] =
+    useState<ApiCustomer[]>([])
   const initialDraft = useMemo(loadQuoteDraft, [])
+
+  useEffect(() => {
+    async function loadCustomers() {
+      try {
+        const apiCustomers = await getCustomers()
+        setCustomers(apiCustomers)
+      } catch (error) {
+        console.error('Unable to load customers:', error)
+      }
+    }
+
+    void loadCustomers()
+  }, [])
 
   const [estimateNumber, setEstimateNumber] =
     useState<string | null>(initialDraft.estimateNumber)
