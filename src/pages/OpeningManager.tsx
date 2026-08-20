@@ -6,16 +6,23 @@ import doubleHungImage from '../assets/windows/double-hung.png'
 import casementImage from '../assets/windows/casement.png'
 import slidingImage from '../assets/windows/sliding.png'
 import pictureImage from '../assets/windows/picture.png'
-import { pricingConfig } from '../data/pricing'
+import slidingGlassDoorImage from '../assets/doors/sliding-glass-door.png'
+import frenchDoorImage from '../assets/doors/french-door.png'
+import entryDoorImage from '../assets/doors/entry-door.png'
 import { calculateCoreProductPrice } from '../services/pricingService'
+import {
+  getProductPrices,
+  type ApiProductPrice,
+} from '../services/pricingApi'
 
 type ProductCategory =
   | 'Single Hung'
-  | 'Sliding'
-  | 'Picture'
+  | 'Double Hung'
+  | 'Sliding Window'
+  | 'Picture Window'
   | 'Casement'
   | 'Awning'
-  | 'Sliding Door'
+  | 'Sliding Glass Door'
   | 'French Door'
   | 'Entry Door'
   | 'Transom'
@@ -68,7 +75,11 @@ type OpeningProduct = {
   id: string
   label: string
   position: string
+  supplier: string
+  manufacturer: string
+  material: string
   productCategory: ProductCategory
+  configuration: string
   series: string
   model: string
   width: string
@@ -138,28 +149,36 @@ type NewOpeningForm = {
   impact: boolean
 }
 
-const productCategoryOptions: ProductCategory[] = [
-  'Single Hung',
-  'Sliding',
-  'Picture',
-  'Casement',
-  'Awning',
-  'Sliding Door',
-  'French Door',
-  'Entry Door',
-  'Transom',
-  'Shape',
-]
+const productConfigurationOptions: Partial<
+  Record<ProductCategory, string[]>
+> = {
+  'Sliding Glass Door': [
+    '2 Panels',
+    '3 Panels',
+    '4 Panels',
+  ],
+  'French Door': [
+    '1 Panel',
+    '2 Panels',
+  ],
+  'Entry Door': [
+    '1 Panel',
+    '2 Panels',
+    '1 Panel + 1 Sidelight',
+    '1 Panel + 2 Sidelights',
+  ],
+}
 
 const productImages: Record<ProductCategory, string> = {
   'Single Hung': doubleHungImage,
-  'Sliding': slidingImage,
-  Picture: pictureImage,
+  'Double Hung': doubleHungImage,
+  'Sliding Window': slidingImage,
+  'Picture Window': pictureImage,
   Casement: casementImage,
   Awning: casementImage,
-  'Sliding Door': slidingImage,
-  'French Door': pictureImage,
-  'Entry Door': pictureImage,
+  'Sliding Glass Door': slidingGlassDoorImage,
+  'French Door': frenchDoorImage,
+  'Entry Door': entryDoorImage,
   Transom: pictureImage,
   Shape: pictureImage,
 }
@@ -225,7 +244,7 @@ const hardwareFinishOptions: HardwareFinish[] = [
 ]
 
 const doorProductCategories: ProductCategory[] = [
-  'Sliding Door',
+  'Sliding Glass Door',
   'French Door',
   'Entry Door',
 ]
@@ -242,77 +261,50 @@ function calculateProductPrice(
     product.productCategory,
   )
 
-  const corePrice = calculateCoreProductPrice({
-    width: product.width,
-    height: product.height,
-    isDoor: !windowProduct,
-    impact,
-  })
-
-  const {
-    squareFeet,
-    ratePerSquareFoot,
-    basePrice,
-    impactPrice,
-  } = corePrice
-
-  const temperedPrice =
-    product.tempered === 'Yes'
-      ? pricingConfig.tempered
-      : 0
-
-  const tintedPrice =
-    product.tinted === 'Yes'
-      ? pricingConfig.tinted
-      : 0
-
-  const privacyGlassPrice =
-    product.privacyGlass === 'Yes'
-      ? pricingConfig.privacyGlass
-      : 0
-
-  const gridsPrice =
-    product.grids === 'Yes'
-      ? pricingConfig.grids
-      : 0
-
-  const colorPrice =
-    product.color === 'White'
-      ? 0
-      : pricingConfig.nonStandardColor
-
-  const screenAdjustment =
-    windowProduct && product.screen === 'No'
-      ? -pricingConfig.screenRemovalCredit
-      : 0
-
-  const installationPrice =
-    pricingConfig.installation
-
-  const total =
-    basePrice +
-    impactPrice +
-    temperedPrice +
-    tintedPrice +
-    privacyGlassPrice +
-    gridsPrice +
-    colorPrice +
-    screenAdjustment +
-    installationPrice
+  const calculatedPrice =
+    calculateCoreProductPrice({
+      width: product.width,
+      height: product.height,
+      productCategory:
+        product.productCategory,
+      configuration:
+        product.configuration,
+      isDoor: !windowProduct,
+      impact: Boolean(impact),
+      tempered: product.tempered === 'Yes',
+      tinted: product.tinted === 'Yes',
+      privacyGlass:
+        product.privacyGlass === 'Yes',
+      grids: product.grids === 'Yes',
+      color: product.color,
+      screen: product.screen !== 'No',
+    })
 
   return {
-    squareFeet,
-    ratePerSquareFoot,
-    basePrice,
-    impact: impactPrice,
-    tempered: temperedPrice,
-    tinted: tintedPrice,
-    privacyGlass: privacyGlassPrice,
-    grids: gridsPrice,
-    color: colorPrice,
-    screenAdjustment,
-    installation: installationPrice,
-    total,
+    squareFeet:
+      calculatedPrice.squareFeet,
+    ratePerSquareFoot:
+      calculatedPrice.ratePerSquareFoot,
+    basePrice:
+      calculatedPrice.basePrice,
+    impact:
+      calculatedPrice.impactPrice,
+    tempered:
+      calculatedPrice.temperedPrice,
+    tinted:
+      calculatedPrice.tintedPrice,
+    privacyGlass:
+      calculatedPrice.privacyGlassPrice,
+    grids:
+      calculatedPrice.gridsPrice,
+    color:
+      calculatedPrice.colorPrice,
+    screenAdjustment:
+      calculatedPrice.screenAdjustment,
+    installation:
+      calculatedPrice.installationPrice,
+    total:
+      calculatedPrice.total,
   }
 }
 
@@ -402,6 +394,9 @@ export default function OpeningManager({
     initialOpenings ?? loadQuoteDraft(),
   )
 
+  const [pricingProducts, setPricingProducts] =
+    useState<ApiProductPrice[]>([])
+
   const [selectedOpeningId, setSelectedOpeningId] =
     useState<string | null>(null)
 
@@ -421,14 +416,37 @@ export default function OpeningManager({
   })
 
   useEffect(() => {
+    async function loadPricingProducts() {
+      try {
+        const products =
+          await getProductPrices()
+
+        setPricingProducts(products)
+
+        console.log(
+          'Pricing products loaded:',
+          products.length,
+        )
+      } catch (error) {
+        console.error(
+          'Unable to load pricing products:',
+          error,
+        )
+      }
+    }
+
+    loadPricingProducts()
+  }, [])
+
+  useEffect(() => {
     onOpeningsChange?.(openings)
   }, [openings, onOpeningsChange])
 
   useEffect(() => {
-  if (!embedded) return
+    if (!embedded) return
 
-  setOpenings(initialOpenings ?? [])
-}, [embedded, initialOpenings])
+    setOpenings(initialOpenings ?? [])
+  }, [embedded, initialOpenings])
 
   useEffect(() => {
     if (embedded) {
@@ -553,7 +571,11 @@ export default function OpeningManager({
       id: crypto.randomUUID(),
       label,
       position,
+      supplier: 'GL',
+      manufacturer: 'Ply Gem',
+      material: 'Vinyl',
       productCategory: 'Single Hung',
+      configuration: 'Standard',
       series: '',
       model: '',
       width: '',
@@ -790,35 +812,39 @@ export default function OpeningManager({
               product.id === productId
                 ? field === 'productCategory'
                   ? {
-                      ...product,
-                      productCategory:
-                        value as ProductCategory,
-                      screen: isWindowProduct(
-                        value as ProductCategory,
-                      )
-                        ? product.screen
-                        : 'No',
-                      swingDirection: isWindowProduct(
-                        value as ProductCategory,
-                      )
-                        ? 'Not Applicable'
-                        : product.swingDirection ===
-                            'Not Applicable'
-                          ? 'In Swing'
-                          : product.swingDirection,
-                      doorHanding: isWindowProduct(
-                        value as ProductCategory,
-                      )
-                        ? 'Not Applicable'
-                        : product.doorHanding ===
-                            'Not Applicable'
-                          ? 'Left Hand'
-                          : product.doorHanding,
-                    }
+                    ...product,
+                    productCategory:
+                      value as ProductCategory,
+                    configuration:
+                      productConfigurationOptions[
+                      value as ProductCategory
+                      ]?.[0] ?? 'Standard',
+                    screen: isWindowProduct(
+                      value as ProductCategory,
+                    )
+                      ? product.screen
+                      : 'No',
+                    swingDirection: isWindowProduct(
+                      value as ProductCategory,
+                    )
+                      ? 'Not Applicable'
+                      : product.swingDirection ===
+                        'Not Applicable'
+                        ? 'In Swing'
+                        : product.swingDirection,
+                    doorHanding: isWindowProduct(
+                      value as ProductCategory,
+                    )
+                      ? 'Not Applicable'
+                      : product.doorHanding ===
+                        'Not Applicable'
+                        ? 'Left Hand'
+                        : product.doorHanding,
+                  }
                   : {
-                      ...product,
-                      [field]: value,
-                    }
+                    ...product,
+                    [field]: value,
+                  }
                 : product,
           ),
         }
@@ -889,8 +915,8 @@ export default function OpeningManager({
           id: crypto.randomUUID(),
           label: opening.isMulled
             ? `${openingNumber}${String.fromCharCode(
-                65 + index,
-              )}`
+              65 + index,
+            )}`
             : openingNumber,
         }),
       ),
@@ -908,8 +934,8 @@ export default function OpeningManager({
   function isProductComplete(product: OpeningProduct) {
     return Boolean(
       product.productCategory &&
-        product.width.trim() &&
-        product.height.trim(),
+      product.width.trim() &&
+      product.height.trim(),
     )
   }
 
@@ -1048,8 +1074,8 @@ export default function OpeningManager({
             description={
               showPricing
                 ? `Includes ${formatCurrency(
-                    totalMullionCharges,
-                  )} in mullion charges`
+                  totalMullionCharges,
+                )} in mullion charges`
                 : 'Use Show pricing to display totals'
             }
           />
@@ -1296,11 +1322,10 @@ export default function OpeningManager({
                           return (
                             <article
                               key={opening.id}
-                              className={`overflow-hidden rounded-2xl border transition ${
-                                isSelected
-                                  ? 'border-[#B59A68] bg-[#FCF9F2]'
-                                  : 'border-[#E8E5DE] bg-white'
-                              }`}
+                              className={`overflow-hidden rounded-2xl border transition ${isSelected
+                                ? 'border-[#B59A68] bg-[#FCF9F2]'
+                                : 'border-[#E8E5DE] bg-white'
+                                }`}
                             >
                               <div className="grid gap-4 p-5 lg:grid-cols-[auto_auto_1.35fr_1fr_auto] lg:items-center">
                                 <div className="h-16 w-20 overflow-hidden rounded-xl border border-[#E4E0D7] bg-[#F7F7F5]">
@@ -1332,11 +1357,10 @@ export default function OpeningManager({
 
                                 <div className="flex flex-wrap items-center gap-2">
                                   <span
-                                    className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                                      isOpeningComplete(opening)
-                                        ? 'bg-[#EAF3EC] text-[#55705B]'
-                                        : 'bg-[#F5EEE3] text-[#8B6D46]'
-                                    }`}
+                                    className={`rounded-full px-3 py-1.5 text-xs font-medium ${isOpeningComplete(opening)
+                                      ? 'bg-[#EAF3EC] text-[#55705B]'
+                                      : 'bg-[#F5EEE3] text-[#8B6D46]'
+                                      }`}
                                   >
                                     {isOpeningComplete(opening)
                                       ? 'Complete'
@@ -1492,9 +1516,9 @@ export default function OpeningManager({
                                               isMulled: checked,
                                               unitCount: checked
                                                 ? Math.max(
-                                                    2,
-                                                    opening.unitCount,
-                                                  )
+                                                  2,
+                                                  opening.unitCount,
+                                                )
                                                 : 1,
                                             },
                                           )
@@ -1571,6 +1595,9 @@ export default function OpeningManager({
                                           product={product}
                                           impact={
                                             opening.impact
+                                          }
+                                          pricingProducts={
+                                            pricingProducts
                                           }
                                           onChange={
                                             updateProductField
@@ -1824,11 +1851,10 @@ function PriceLine({
 }: PriceLineProps) {
   return (
     <div
-      className={`flex items-center justify-between gap-4 ${
-        emphasized
-          ? 'rounded-xl bg-[#F4EFE4] px-4 py-3'
-          : ''
-      }`}
+      className={`flex items-center justify-between gap-4 ${emphasized
+        ? 'rounded-xl bg-[#F4EFE4] px-4 py-3'
+        : ''
+        }`}
     >
       <span
         className={
@@ -1857,6 +1883,7 @@ type ProductEditorProps = {
   openingId: string
   product: OpeningProduct
   impact: boolean
+  pricingProducts: ApiProductPrice[]
   onChange: <Field extends keyof OpeningProduct>(
     openingId: string,
     productId: string,
@@ -1869,11 +1896,64 @@ function ProductEditor({
   openingId,
   product,
   impact,
+  pricingProducts,
   onChange,
 }: ProductEditorProps) {
   const windowProduct = isWindowProduct(
     product.productCategory,
   )
+
+  const supplierOptions = Array.from(
+    new Set(
+      pricingProducts
+        .map((item) => item.supplier)
+        .filter(Boolean),
+    ),
+  ).sort()
+
+  const manufacturerOptions = Array.from(
+    new Set(
+      pricingProducts
+        .filter(
+          (item) =>
+            item.supplier === product.supplier,
+        )
+        .map((item) => item.manufacturer)
+        .filter(Boolean),
+    ),
+  ).sort()
+
+  const materialOptions = Array.from(
+    new Set(
+      pricingProducts
+        .filter(
+          (item) =>
+            item.supplier === product.supplier &&
+            item.manufacturer === product.manufacturer,
+        )
+        .map((item) => item.material)
+        .filter(Boolean),
+    ),
+  ).sort()
+
+  const productOptions = Array.from(
+    new Set(
+      pricingProducts
+        .filter(
+          (item) =>
+            item.supplier === product.supplier &&
+            item.manufacturer === product.manufacturer &&
+            item.material === product.material,
+        )
+        .map((item) => item.name)
+        .filter(Boolean),
+    ),
+  ).sort()
+
+  const configurationOptions =
+    productConfigurationOptions[
+    product.productCategory
+    ] ?? ['Standard']
 
   return (
     <div className="rounded-2xl border border-[#E4E0D7] bg-white p-5">
@@ -1909,16 +1989,186 @@ function ProductEditor({
           title="Product"
           description="Choose the product style, series and model."
         >
+
+          <SelectField
+            label="Supplier"
+            value={product.supplier}
+            options={supplierOptions}
+            onChange={(value) => {
+              const nextManufacturer =
+                pricingProducts.find(
+                  (item) =>
+                    item.supplier === value,
+                )?.manufacturer ?? ''
+
+              const nextMaterial =
+                pricingProducts.find(
+                  (item) =>
+                    item.supplier === value &&
+                    item.manufacturer === nextManufacturer,
+                )?.material ?? ''
+
+              const nextProduct =
+                pricingProducts.find(
+                  (item) =>
+                    item.supplier === value &&
+                    item.manufacturer === nextManufacturer &&
+                    item.material === nextMaterial,
+                )
+
+              onChange(
+                openingId,
+                product.id,
+                'supplier',
+                value,
+              )
+
+              onChange(
+                openingId,
+                product.id,
+                'manufacturer',
+                nextManufacturer,
+              )
+
+              onChange(
+                openingId,
+                product.id,
+                'material',
+                nextMaterial,
+              )
+
+              if (nextProduct) {
+                onChange(
+                  openingId,
+                  product.id,
+                  'productCategory',
+                  nextProduct.name as ProductCategory,
+                )
+
+                onChange(
+                  openingId,
+                  product.id,
+                  'configuration',
+                  nextProduct.configuration,
+                )
+              }
+            }}
+          />
+
+          <SelectField
+            label="Manufacturer"
+            value={product.manufacturer}
+            options={manufacturerOptions}
+            onChange={(value) => {
+              const nextMaterial =
+                pricingProducts.find(
+                  (item) =>
+                    item.supplier === product.supplier &&
+                    item.manufacturer === value,
+                )?.material ?? ''
+
+              const nextProduct =
+                pricingProducts.find(
+                  (item) =>
+                    item.supplier === product.supplier &&
+                    item.manufacturer === value &&
+                    item.material === nextMaterial,
+                )
+
+              onChange(
+                openingId,
+                product.id,
+                'manufacturer',
+                value,
+              )
+
+              onChange(
+                openingId,
+                product.id,
+                'material',
+                nextMaterial,
+              )
+
+              if (nextProduct) {
+                onChange(
+                  openingId,
+                  product.id,
+                  'productCategory',
+                  nextProduct.name as ProductCategory,
+                )
+
+                onChange(
+                  openingId,
+                  product.id,
+                  'configuration',
+                  nextProduct.configuration,
+                )
+              }
+            }}
+          />
+
+          <SelectField
+            label="Material"
+            value={product.material}
+            options={materialOptions}
+            onChange={(value) => {
+              const nextProduct =
+                pricingProducts.find(
+                  (item) =>
+                    item.supplier === product.supplier &&
+                    item.manufacturer === product.manufacturer &&
+                    item.material === value,
+                )
+
+              onChange(
+                openingId,
+                product.id,
+                'material',
+                value,
+              )
+
+              if (nextProduct) {
+                onChange(
+                  openingId,
+                  product.id,
+                  'productCategory',
+                  nextProduct.name as ProductCategory,
+                )
+
+                onChange(
+                  openingId,
+                  product.id,
+                  'configuration',
+                  nextProduct.configuration,
+                )
+              }
+            }}
+          />
+
           <SelectField
             label="Product type"
             value={product.productCategory}
-            options={productCategoryOptions}
+            options={productOptions}
             onChange={(value) =>
               onChange(
                 openingId,
                 product.id,
                 'productCategory',
                 value as ProductCategory,
+              )
+            }
+          />
+
+          <SelectField
+            label="Configuration"
+            value={product.configuration}
+            options={configurationOptions}
+            onChange={(value) =>
+              onChange(
+                openingId,
+                product.id,
+                'configuration',
+                value,
               )
             }
           />
@@ -2361,11 +2611,10 @@ function OptionCard({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`flex items-center justify-between rounded-2xl border p-4 text-left transition ${
-        checked
-          ? 'border-[#B59A68] bg-[#F8F4EB]'
-          : 'border-[#DEDAD1] bg-[#FAF9F6] hover:border-[#C9C2B5]'
-      }`}
+      className={`flex items-center justify-between rounded-2xl border p-4 text-left transition ${checked
+        ? 'border-[#B59A68] bg-[#F8F4EB]'
+        : 'border-[#DEDAD1] bg-[#FAF9F6] hover:border-[#C9C2B5]'
+        }`}
     >
       <span>
         <span className="block text-sm font-medium text-[#555555]">
@@ -2378,14 +2627,12 @@ function OptionCard({
       </span>
 
       <span
-        className={`relative ml-4 h-6 w-11 shrink-0 rounded-full transition ${
-          checked ? 'bg-[#B59A68]' : 'bg-[#D5D1C8]'
-        }`}
+        className={`relative ml-4 h-6 w-11 shrink-0 rounded-full transition ${checked ? 'bg-[#B59A68]' : 'bg-[#D5D1C8]'
+          }`}
       >
         <span
-          className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${
-            checked ? 'left-6' : 'left-1'
-          }`}
+          className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${checked ? 'left-6' : 'left-1'
+            }`}
         />
       </span>
     </button>
@@ -2410,8 +2657,8 @@ function TextField({
   const inputId = `${label
     .toLowerCase()
     .replaceAll(' ', '-')}-${placeholder
-    .toLowerCase()
-    .replaceAll(' ', '-')}`
+      .toLowerCase()
+      .replaceAll(' ', '-')}`
 
   return (
     <div>
@@ -2453,8 +2700,8 @@ function SelectField({
   const inputId = `${label
     .toLowerCase()
     .replaceAll(' ', '-')}-${value
-    .toLowerCase()
-    .replaceAll(' ', '-')}`
+      .toLowerCase()
+      .replaceAll(' ', '-')}`
 
   return (
     <div>

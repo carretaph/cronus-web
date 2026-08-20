@@ -253,11 +253,20 @@ function calculateProductPrice(
   )
 
   return calculateCoreProductPrice({
-    width: product.width,
-    height: product.height,
-    isDoor,
-    impact: opening.impact,
-  }).total
+  width: product.width,
+  height: product.height,
+  productCategory: product.productCategory,
+  configuration: product.configuration,
+  isDoor,
+  impact: Boolean(opening.impact),
+  tempered: product.tempered === 'Yes',
+  tinted: product.tinted === 'Yes',
+  privacyGlass:
+    product.privacyGlass === 'Yes',
+  grids: product.grids === 'Yes',
+  color: product.color,
+  screen: product.screen !== 'No',
+}).total
 }
 
 function getPricedProducts(
@@ -269,7 +278,10 @@ function getPricedProducts(
       openingNumber: opening.openingNumber,
       label: product.label,
       productCategory: product.productCategory,
-      price: calculateProductPrice(opening, product),
+      price: calculateProductPrice(
+        opening,
+        product,
+      ),
     })),
   )
 }

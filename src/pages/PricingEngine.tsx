@@ -4,6 +4,24 @@ import {
   useState,
 } from 'react'
 
+import {
+  getProductPrices,
+  createProductPrice,
+  updateProductPrice,
+  deleteProductPrice,
+  getAdditionalCosts,
+  createAdditionalCost,
+  updateAdditionalCostApi,
+  deleteAdditionalCost,
+  getLaborCosts,
+  createLaborCost,
+  updateLaborCostApi,
+  deleteLaborCost,
+  getBusinessRules,
+  createBusinessRules,
+  updateBusinessRulesApi,
+} from '../services/pricingApi'
+
 type PricingUnit =
   | 'Per sq. ft.'
   | 'Per opening'
@@ -16,7 +34,12 @@ type ProductCategory = 'Window' | 'Door'
 
 type ProductPrice = {
   id: string
+  databaseId?: number
+  manufacturer: string
+  supplier: string
   name: string
+  configuration: string
+  material?: string
   category: ProductCategory
   pricingUnit: PricingUnit
   standardRate: number
@@ -27,6 +50,7 @@ type ProductPrice = {
 
 type AdditionalCost = {
   id: string
+  databaseId?: number
   name: string
   pricingUnit: PricingUnit
   cost: number
@@ -35,6 +59,7 @@ type AdditionalCost = {
 
 type LaborCost = {
   id: string
+  databaseId?: number
   name: string
   pricingUnit: PricingUnit
   cost: number
@@ -42,6 +67,7 @@ type LaborCost = {
 }
 
 type BusinessRules = {
+  databaseId?: number
   defaultMarkup: number
   minimumGrossMargin: number
   minimumProjectProfit: number
@@ -60,17 +86,78 @@ type PriceBook = {
   businessRules: BusinessRules
 }
 
-const STORAGE_KEY = 'cronus_pricing_engine_v1'
+const STORAGE_KEY =
+  'cronus_pricing_engine_v1'
+
+const pricingUnits: PricingUnit[] = [
+  'Per sq. ft.',
+  'Per opening',
+  'Fixed',
+  'Percentage',
+  'Per linear ft.',
+  'Per mile',
+]
+
+const windowProductOptions = [
+  'Single Hung',
+  'Double Hung',
+  'Sliding Window',
+  'Picture Window',
+  'Casement',
+  'Awning',
+] as const
+
+const doorProductOptions = [
+  'Sliding Glass Door',
+  'French Door',
+  'Entry Door',
+] as const
+
+const productConfigurationOptions: Record<
+  string,
+  readonly string[]
+> = {
+  'Single Hung': ['Standard'],
+  'Double Hung': ['Standard'],
+  'Sliding Window': ['Standard'],
+  'Picture Window': ['Standard'],
+  Casement: ['Standard'],
+  Awning: ['Standard'],
+
+  'Sliding Glass Door': [
+    '2 Panels',
+    '3 Panels',
+    '4 Panels',
+  ],
+
+  'French Door': [
+    '1 Panel',
+    '2 Panels',
+  ],
+
+  'Entry Door': [
+    '1 Panel',
+    '2 Panels',
+    '1 Panel + 1 Sidelight',
+    '1 Panel + 2 Sidelights',
+  ],
+}
 
 const defaultPriceBook: PriceBook = {
   manufacturer: 'Ply Gem',
   distributor: 'GL',
-  priceBookName: 'GL Current Price Book',
-  effectiveDate: new Date().toISOString().slice(0, 10),
+  priceBookName: 'Current Price Database',
+  effectiveDate: new Date()
+    .toISOString()
+    .slice(0, 10),
+
   products: [
     {
       id: 'single-hung',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
       name: 'Single Hung',
+      configuration: 'Standard',
       category: 'Window',
       pricingUnit: 'Per sq. ft.',
       standardRate: 106,
@@ -79,8 +166,24 @@ const defaultPriceBook: PriceBook = {
       active: true,
     },
     {
-      id: 'sliding window',
+      id: 'double-hung',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
+      name: 'Double Hung',
+      configuration: 'Standard',
+      category: 'Window',
+      pricingUnit: 'Per sq. ft.',
+      standardRate: 106,
+      smallOpeningRate: 135,
+      smallOpeningThreshold: 10,
+      active: true,
+    },
+    {
+      id: 'sliding-window',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
       name: 'Sliding Window',
+      configuration: 'Standard',
       category: 'Window',
       pricingUnit: 'Per sq. ft.',
       standardRate: 106,
@@ -90,7 +193,10 @@ const defaultPriceBook: PriceBook = {
     },
     {
       id: 'picture-window',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
       name: 'Picture Window',
+      configuration: 'Standard',
       category: 'Window',
       pricingUnit: 'Per sq. ft.',
       standardRate: 106,
@@ -100,7 +206,10 @@ const defaultPriceBook: PriceBook = {
     },
     {
       id: 'casement',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
       name: 'Casement',
+      configuration: 'Standard',
       category: 'Window',
       pricingUnit: 'Per sq. ft.',
       standardRate: 106,
@@ -109,8 +218,25 @@ const defaultPriceBook: PriceBook = {
       active: true,
     },
     {
-      id: 'sliding-glass-door',
+      id: 'awning',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
+      name: 'Awning',
+      configuration: 'Standard',
+      category: 'Window',
+      pricingUnit: 'Per sq. ft.',
+      standardRate: 106,
+      smallOpeningRate: 135,
+      smallOpeningThreshold: 10,
+      active: true,
+    },
+
+    {
+      id: 'sliding-door-2-panel',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
       name: 'Sliding Glass Door',
+      configuration: '2 Panels',
       category: 'Door',
       pricingUnit: 'Per sq. ft.',
       standardRate: 51,
@@ -119,8 +245,106 @@ const defaultPriceBook: PriceBook = {
       active: true,
     },
     {
-      id: 'entry-door',
+      id: 'sliding-door-3-panel',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
+      name: 'Sliding Glass Door',
+      configuration: '3 Panels',
+      category: 'Door',
+      pricingUnit: 'Per sq. ft.',
+      standardRate: 51,
+      smallOpeningRate: 0,
+      smallOpeningThreshold: 0,
+      active: true,
+    },
+    {
+      id: 'sliding-door-4-panel',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
+      name: 'Sliding Glass Door',
+      configuration: '4 Panels',
+      category: 'Door',
+      pricingUnit: 'Per sq. ft.',
+      standardRate: 51,
+      smallOpeningRate: 0,
+      smallOpeningThreshold: 0,
+      active: true,
+    },
+
+    {
+      id: 'french-door-1-panel',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
+      name: 'French Door',
+      configuration: '1 Panel',
+      category: 'Door',
+      pricingUnit: 'Per sq. ft.',
+      standardRate: 51,
+      smallOpeningRate: 0,
+      smallOpeningThreshold: 0,
+      active: true,
+    },
+    {
+      id: 'french-door-2-panel',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
+      name: 'French Door',
+      configuration: '2 Panels',
+      category: 'Door',
+      pricingUnit: 'Per sq. ft.',
+      standardRate: 51,
+      smallOpeningRate: 0,
+      smallOpeningThreshold: 0,
+      active: true,
+    },
+
+    {
+      id: 'entry-door-1-panel',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
       name: 'Entry Door',
+      configuration: '1 Panel',
+      category: 'Door',
+      pricingUnit: 'Per sq. ft.',
+      standardRate: 51,
+      smallOpeningRate: 0,
+      smallOpeningThreshold: 0,
+      active: true,
+    },
+    {
+      id: 'entry-door-2-panel',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
+      name: 'Entry Door',
+      configuration: '2 Panels',
+      category: 'Door',
+      pricingUnit: 'Per sq. ft.',
+      standardRate: 51,
+      smallOpeningRate: 0,
+      smallOpeningThreshold: 0,
+      active: true,
+    },
+    {
+      id: 'entry-door-1-sidelight',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
+      name: 'Entry Door',
+      configuration:
+        '1 Panel + 1 Sidelight',
+      category: 'Door',
+      pricingUnit: 'Per sq. ft.',
+      standardRate: 51,
+      smallOpeningRate: 0,
+      smallOpeningThreshold: 0,
+      active: true,
+    },
+    {
+      id: 'entry-door-2-sidelights',
+      manufacturer: 'Ply Gem',
+      supplier: 'GL',
+      name: 'Entry Door',
+      configuration:
+        '1 Panel + 2 Sidelights',
       category: 'Door',
       pricingUnit: 'Per sq. ft.',
       standardRate: 51,
@@ -129,17 +353,25 @@ const defaultPriceBook: PriceBook = {
       active: true,
     },
   ],
+
   additionalCosts: [
     {
       id: 'impact-glass',
       name: 'Impact Glass',
-      pricingUnit: 'Per sq. ft.',
-      cost: 0,
+      pricingUnit: 'Percentage',
+      cost: 100,
       active: true,
     },
     {
       id: 'tempered-glass',
       name: 'Tempered Glass',
+      pricingUnit: 'Per sq. ft.',
+      cost: 0,
+      active: true,
+    },
+    {
+      id: 'tinted-glass',
+      name: 'Tinted Glass',
       pricingUnit: 'Per sq. ft.',
       cost: 0,
       active: true,
@@ -166,13 +398,14 @@ const defaultPriceBook: PriceBook = {
       active: true,
     },
     {
-      id: 'screens',
-      name: 'Screens',
+      id: 'screen-removal-credit',
+      name: 'Screen Removal Credit',
       pricingUnit: 'Per opening',
       cost: 0,
       active: true,
     },
   ],
+
   laborCosts: [
     {
       id: 'window-installation',
@@ -224,6 +457,7 @@ const defaultPriceBook: PriceBook = {
       active: true,
     },
   ],
+
   businessRules: {
     defaultMarkup: 100,
     minimumGrossMargin: 35,
@@ -232,15 +466,6 @@ const defaultPriceBook: PriceBook = {
     salesTax: 0,
   },
 }
-
-const pricingUnits: PricingUnit[] = [
-  'Per sq. ft.',
-  'Per opening',
-  'Fixed',
-  'Percentage',
-  'Per linear ft.',
-  'Per mile',
-]
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random()
@@ -263,9 +488,58 @@ function formatCurrency(value: number) {
   }).format(value)
 }
 
+function normalizeProduct(
+  product: Partial<ProductPrice>,
+  manufacturer: string,
+  supplier: string,
+): ProductPrice {
+  return {
+    id:
+      product.id ??
+      createId('product'),
+
+    manufacturer:
+      product.manufacturer ??
+      manufacturer,
+
+    supplier:
+      product.supplier ??
+      supplier,
+
+    name:
+      product.name ??
+      'New Product',
+
+    configuration:
+      product.configuration ??
+      'Standard',
+
+    category:
+      product.category ??
+      'Window',
+
+    pricingUnit:
+      product.pricingUnit ??
+      'Per sq. ft.',
+
+    standardRate:
+      product.standardRate ?? 0,
+
+    smallOpeningRate:
+      product.smallOpeningRate ?? 0,
+
+    smallOpeningThreshold:
+      product.smallOpeningThreshold ?? 10,
+
+    active:
+      product.active ?? true,
+  }
+}
+
 function loadStoredPriceBook(): PriceBook {
   try {
-    const storedValue = localStorage.getItem(STORAGE_KEY)
+    const storedValue =
+      localStorage.getItem(STORAGE_KEY)
 
     if (!storedValue) {
       return defaultPriceBook
@@ -275,18 +549,42 @@ function loadStoredPriceBook(): PriceBook {
       storedValue,
     ) as Partial<PriceBook>
 
+    const manufacturer =
+      parsedValue.manufacturer ??
+      defaultPriceBook.manufacturer
+
+    const distributor =
+      parsedValue.distributor ??
+      defaultPriceBook.distributor
+
+    const storedProducts =
+      parsedValue.products ??
+      defaultPriceBook.products
+
     return {
       ...defaultPriceBook,
       ...parsedValue,
+
+      manufacturer,
+      distributor,
+
       products:
-        parsedValue.products ??
-        defaultPriceBook.products,
+        storedProducts.map((product) =>
+          normalizeProduct(
+            product,
+            manufacturer,
+            distributor,
+          ),
+        ),
+
       additionalCosts:
         parsedValue.additionalCosts ??
         defaultPriceBook.additionalCosts,
+
       laborCosts:
         parsedValue.laborCosts ??
         defaultPriceBook.laborCosts,
+
       businessRules: {
         ...defaultPriceBook.businessRules,
         ...parsedValue.businessRules,
@@ -299,13 +597,37 @@ function loadStoredPriceBook(): PriceBook {
 
 export default function PricingEngine() {
   const [priceBook, setPriceBook] =
-    useState<PriceBook>(loadStoredPriceBook)
+    useState<PriceBook>(
+      loadStoredPriceBook,
+    )
 
-  const [savedPriceBook, setSavedPriceBook] =
-    useState<PriceBook>(loadStoredPriceBook)
+  const [
+    savedPriceBook,
+    setSavedPriceBook,
+  ] = useState<PriceBook>(
+    loadStoredPriceBook,
+  )
+
+  const [
+    pricingDatabaseLoaded,
+    setPricingDatabaseLoaded,
+  ] = useState(false)
 
   const [saveMessage, setSaveMessage] =
     useState('')
+
+  const [search, setSearch] =
+    useState('')
+
+  const [
+    manufacturerFilter,
+    setManufacturerFilter,
+  ] = useState('All')
+
+  const [
+    supplierFilter,
+    setSupplierFilter,
+  ] = useState('All')
 
   const hasUnsavedChanges = useMemo(
     () =>
@@ -314,28 +636,282 @@ export default function PricingEngine() {
     [priceBook, savedPriceBook],
   )
 
-  const activeProducts = priceBook.products.filter(
-    (product) => product.active,
-  ).length
+  const manufacturers = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          priceBook.products
+            .map(
+              (product) =>
+                product.manufacturer,
+            )
+            .filter(Boolean),
+        ),
+      ).sort(),
+    [priceBook.products],
+  )
 
-  const configuredAdditionalCosts =
-    priceBook.additionalCosts.filter(
-      (item) => item.active && item.cost > 0,
+  const suppliers = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          priceBook.products
+            .map(
+              (product) =>
+                product.supplier,
+            )
+            .filter(Boolean),
+        ),
+      ).sort(),
+    [priceBook.products],
+  )
+
+  const filteredProducts =
+    useMemo(() => {
+      const normalizedSearch =
+        search.trim().toLowerCase()
+
+      return priceBook.products.filter(
+        (product) => {
+          if (
+            manufacturerFilter !== 'All' &&
+            product.manufacturer !==
+            manufacturerFilter
+          ) {
+            return false
+          }
+
+          if (
+            supplierFilter !== 'All' &&
+            product.supplier !==
+            supplierFilter
+          ) {
+            return false
+          }
+
+          if (!normalizedSearch) {
+            return true
+          }
+
+          const haystack = [
+            product.manufacturer,
+            product.supplier,
+            product.name,
+            product.configuration,
+            product.category,
+          ]
+            .join(' ')
+            .toLowerCase()
+
+          return haystack.includes(
+            normalizedSearch,
+          )
+        },
+      )
+    }, [
+      priceBook.products,
+      search,
+      manufacturerFilter,
+      supplierFilter,
+    ])
+
+  const activeProducts =
+    priceBook.products.filter(
+      (product) => product.active,
     ).length
 
-  const configuredLaborCosts =
-    priceBook.laborCosts.filter(
-      (item) => item.active && item.cost > 0,
-    ).length
+  useEffect(() => {
+    async function loadProductsFromDatabase() {
+      try {
+        const databaseProducts =
+          await getProductPrices()
+
+        if (databaseProducts.length === 0) {
+          setPricingDatabaseLoaded(true)
+          return
+        }
+
+        const products: ProductPrice[] =
+          databaseProducts.map((product) => ({
+            id: `db-${product.id}`,
+            databaseId: product.id,
+            manufacturer: product.manufacturer,
+            supplier: product.supplier,
+            name: product.name,
+            configuration: product.configuration,
+            material: product.material ?? 'Vinyl',
+            category:
+              product.category.toUpperCase() === 'DOOR'
+                ? 'Door'
+                : 'Window',
+            pricingUnit:
+              product.pricingUnit as PricingUnit,
+            standardRate: product.standardRate,
+            smallOpeningRate:
+              product.smallOpeningRate,
+            smallOpeningThreshold:
+              product.smallOpeningThreshold,
+            active: product.active,
+          }))
+
+        setPriceBook((current) => ({
+          ...current,
+          products,
+        }))
+
+        setSavedPriceBook((current) => ({
+          ...current,
+          products,
+        }))
+
+        setPricingDatabaseLoaded(true)
+
+      } catch (error) {
+        console.error(
+          'Unable to load pricing database:',
+          error,
+        )
+      }
+    }
+
+    loadProductsFromDatabase()
+  }, [])
+
+  useEffect(() => {
+    async function loadAdditionalCostsFromDatabase() {
+      try {
+        const databaseItems =
+          await getAdditionalCosts()
+
+        if (databaseItems.length === 0) {
+          return
+        }
+
+        const additionalCosts: AdditionalCost[] =
+          databaseItems.map((item) => ({
+            id: `db-additional-${item.id}`,
+            databaseId: item.id,
+            name: item.name,
+            pricingUnit:
+              item.pricingUnit as PricingUnit,
+            cost: item.cost,
+            active: item.active,
+          }))
+
+        setPriceBook((current) => ({
+          ...current,
+          additionalCosts,
+        }))
+
+        setSavedPriceBook((current) => ({
+          ...current,
+          additionalCosts,
+        }))
+      } catch (error) {
+        console.error(
+          'Unable to load additional costs:',
+          error,
+        )
+      }
+    }
+
+    loadAdditionalCostsFromDatabase()
+  }, [])
+
+  useEffect(() => {
+    async function loadLaborCostsFromDatabase() {
+      try {
+        const databaseItems =
+          await getLaborCosts()
+
+        if (databaseItems.length === 0) {
+          return
+        }
+
+        const laborCosts: LaborCost[] =
+          databaseItems.map((item) => ({
+            id: `db-labor-${item.id}`,
+            databaseId: item.id,
+            name: item.name,
+            pricingUnit:
+              item.pricingUnit as PricingUnit,
+            cost: item.cost,
+            active: item.active,
+          }))
+
+        setPriceBook((current) => ({
+          ...current,
+          laborCosts,
+        }))
+
+        setSavedPriceBook((current) => ({
+          ...current,
+          laborCosts,
+        }))
+      } catch (error) {
+        console.error(
+          'Unable to load labor costs:',
+          error,
+        )
+      }
+    }
+
+    loadLaborCostsFromDatabase()
+  }, [])
+
+  useEffect(() => {
+    async function loadBusinessRulesFromDatabase() {
+      try {
+        const databaseRules =
+          await getBusinessRules()
+
+        if (databaseRules.length === 0) {
+          return
+        }
+
+        const rules = databaseRules[0]
+
+        const businessRules: BusinessRules = {
+          databaseId: rules.id,
+          defaultMarkup: rules.defaultMarkup,
+          minimumGrossMargin:
+            rules.minimumGrossMargin,
+          minimumProjectProfit:
+            rules.minimumProjectProfit,
+          maximumSalesDiscount:
+            rules.maximumSalesDiscount,
+          salesTax: rules.salesTax,
+        }
+
+        setPriceBook((current) => ({
+          ...current,
+          businessRules,
+        }))
+
+        setSavedPriceBook((current) => ({
+          ...current,
+          businessRules,
+        }))
+      } catch (error) {
+        console.error(
+          'Unable to load business rules:',
+          error,
+        )
+      }
+    }
+
+    loadBusinessRulesFromDatabase()
+  }, [])
 
   useEffect(() => {
     if (!saveMessage) {
       return
     }
 
-    const timeout = window.setTimeout(() => {
-      setSaveMessage('')
-    }, 3000)
+    const timeout =
+      window.setTimeout(() => {
+        setSaveMessage('')
+      }, 3000)
 
     return () => {
       window.clearTimeout(timeout)
@@ -362,44 +938,121 @@ export default function PricingEngine() {
   ) {
     setPriceBook((current) => ({
       ...current,
-      products: current.products.map(
-        (product) =>
-          product.id === id
-            ? {
+
+      products:
+        current.products.map(
+          (product) =>
+            product.id === id
+              ? {
                 ...product,
                 ...changes,
               }
-            : product,
-      ),
+              : product,
+        ),
     }))
   }
 
   function addProduct() {
     setPriceBook((current) => ({
       ...current,
+
       products: [
         ...current.products,
+
         {
           id: createId('product'),
+
+          manufacturer:
+            manufacturerFilter !== 'All'
+              ? manufacturerFilter
+              : current.manufacturer,
+
+          supplier:
+            supplierFilter !== 'All'
+              ? supplierFilter
+              : current.distributor,
+
           name: 'New Product',
+
+          configuration:
+            'Standard',
+
+          material: 'Vinyl',
+
           category: 'Window',
-          pricingUnit: 'Per sq. ft.',
+
+          pricingUnit:
+            'Per sq. ft.',
+
           standardRate: 0,
+
           smallOpeningRate: 0,
+
           smallOpeningThreshold: 10,
+
           active: true,
         },
       ],
     }))
   }
 
-  function removeProduct(id: string) {
-    setPriceBook((current) => ({
-      ...current,
-      products: current.products.filter(
-        (product) => product.id !== id,
-      ),
-    }))
+  async function removeProduct(id: string) {
+    const confirmed =
+      window.confirm(
+        'Remove this product price?',
+      )
+
+    if (!confirmed) {
+      return
+    }
+
+    const productToRemove =
+      priceBook.products.find(
+        (product) => product.id === id,
+      )
+
+    if (!productToRemove) {
+      return
+    }
+
+    try {
+      if (productToRemove.databaseId) {
+        await deleteProductPrice(
+          productToRemove.databaseId,
+        )
+      }
+
+      setPriceBook((current) => ({
+        ...current,
+        products:
+          current.products.filter(
+            (product) =>
+              product.id !== id,
+          ),
+      }))
+
+      setSavedPriceBook((current) => ({
+        ...current,
+        products:
+          current.products.filter(
+            (product) =>
+              product.id !== id,
+          ),
+      }))
+
+      setSaveMessage(
+        'Product removed successfully.',
+      )
+    } catch (error) {
+      console.error(
+        'Unable to remove product:',
+        error,
+      )
+
+      setSaveMessage(
+        'Unable to remove product.',
+      )
+    }
   }
 
   function updateAdditionalCost(
@@ -408,14 +1061,16 @@ export default function PricingEngine() {
   ) {
     setPriceBook((current) => ({
       ...current,
+
       additionalCosts:
-        current.additionalCosts.map((item) =>
-          item.id === id
-            ? {
+        current.additionalCosts.map(
+          (item) =>
+            item.id === id
+              ? {
                 ...item,
                 ...changes,
               }
-            : item,
+              : item,
         ),
     }))
   }
@@ -423,12 +1078,15 @@ export default function PricingEngine() {
   function addAdditionalCost() {
     setPriceBook((current) => ({
       ...current,
+
       additionalCosts: [
         ...current.additionalCosts,
+
         {
           id: createId('additional'),
           name: 'New Option',
-          pricingUnit: 'Per opening',
+          pricingUnit:
+            'Per opening',
           cost: 0,
           active: true,
         },
@@ -436,14 +1094,63 @@ export default function PricingEngine() {
     }))
   }
 
-  function removeAdditionalCost(id: string) {
-    setPriceBook((current) => ({
-      ...current,
-      additionalCosts:
-        current.additionalCosts.filter(
-          (item) => item.id !== id,
-        ),
-    }))
+  async function removeAdditionalCost(
+    id: string,
+  ) {
+    const confirmed =
+      window.confirm(
+        'Remove this option or add-on?',
+      )
+
+    if (!confirmed) {
+      return
+    }
+
+    const itemToRemove =
+      priceBook.additionalCosts.find(
+        (item) => item.id === id,
+      )
+
+    if (!itemToRemove) {
+      return
+    }
+
+    try {
+      if (itemToRemove.databaseId) {
+        await deleteAdditionalCost(
+          itemToRemove.databaseId,
+        )
+      }
+
+      setPriceBook((current) => ({
+        ...current,
+        additionalCosts:
+          current.additionalCosts.filter(
+            (item) => item.id !== id,
+          ),
+      }))
+
+      setSavedPriceBook((current) => ({
+        ...current,
+        additionalCosts:
+          current.additionalCosts.filter(
+            (item) => item.id !== id,
+          ),
+      }))
+
+      setSaveMessage(
+        'Option or add-on removed successfully.',
+      )
+    } catch (error) {
+      console.error(
+        'Unable to remove option or add-on:',
+        error,
+      )
+
+      setSaveMessage(
+        'Unable to remove option or add-on.',
+      )
+    }
   }
 
   function updateLaborCost(
@@ -452,23 +1159,27 @@ export default function PricingEngine() {
   ) {
     setPriceBook((current) => ({
       ...current,
-      laborCosts: current.laborCosts.map(
-        (item) =>
-          item.id === id
-            ? {
+
+      laborCosts:
+        current.laborCosts.map(
+          (item) =>
+            item.id === id
+              ? {
                 ...item,
                 ...changes,
               }
-            : item,
-      ),
+              : item,
+        ),
     }))
   }
 
   function addLaborCost() {
     setPriceBook((current) => ({
       ...current,
+
       laborCosts: [
         ...current.laborCosts,
+
         {
           id: createId('labor'),
           name: 'New Project Cost',
@@ -480,14 +1191,57 @@ export default function PricingEngine() {
     }))
   }
 
-  function removeLaborCost(id: string) {
-    setPriceBook((current) => ({
-      ...current,
-      laborCosts:
-        current.laborCosts.filter(
-          (item) => item.id !== id,
-        ),
-    }))
+  async function removeLaborCost(
+    id: string,
+  ) {
+    const item =
+      priceBook.laborCosts.find(
+        (laborCost) =>
+          laborCost.id === id,
+      )
+
+    if (!item) {
+      return
+    }
+
+    try {
+      if (item.databaseId) {
+        await deleteLaborCost(
+          item.databaseId,
+        )
+      }
+
+      setPriceBook((current) => ({
+        ...current,
+        laborCosts:
+          current.laborCosts.filter(
+            (laborCost) =>
+              laborCost.id !== id,
+          ),
+      }))
+
+      setSavedPriceBook((current) => ({
+        ...current,
+        laborCosts:
+          current.laborCosts.filter(
+            (laborCost) =>
+              laborCost.id !== id,
+          ),
+      }))
+
+      setSaveMessage(
+        'Labor cost removed successfully.',
+      )
+    } catch (error) {
+      console.error(
+        'Unable to remove labor cost:',
+        error,
+      )
+
+      setSaveMessage(
+        'Unable to remove labor cost.',
+      )
+    }
   }
 
   function updateBusinessRule(
@@ -496,6 +1250,7 @@ export default function PricingEngine() {
   ) {
     setPriceBook((current) => ({
       ...current,
+
       businessRules: {
         ...current.businessRules,
         [field]: value,
@@ -503,27 +1258,218 @@ export default function PricingEngine() {
     }))
   }
 
-  function savePricing() {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(priceBook),
-    )
 
-    setSavedPriceBook(priceBook)
-    setSaveMessage(
-      'Pricing information saved successfully.',
-    )
+  async function savePricing() {
+    if (!pricingDatabaseLoaded) {
+      setSaveMessage(
+        'Pricing database is still loading. Please wait.',
+      )
+      return
+    }
+
+    try {
+      setSaveMessage(
+        'Saving pricing database...',
+      )
+
+      const savedProducts: ProductPrice[] = []
+
+      for (const product of priceBook.products) {
+        const apiProduct = {
+          manufacturer: product.manufacturer,
+          supplier: product.supplier,
+          name: product.name,
+          configuration: product.configuration,
+          material: product.material ?? 'Vinyl',
+          category: product.category,
+          pricingUnit: product.pricingUnit,
+          standardRate: product.standardRate,
+          smallOpeningRate:
+            product.smallOpeningRate,
+          smallOpeningThreshold:
+            product.smallOpeningThreshold,
+          active: product.active,
+        }
+
+        if (product.databaseId) {
+          const saved =
+            await updateProductPrice(
+              product.databaseId,
+              apiProduct,
+            )
+
+          savedProducts.push({
+            ...product,
+            databaseId: saved.id,
+            id: `db-${saved.id}`,
+          })
+        } else {
+          const saved =
+            await createProductPrice(
+              apiProduct,
+            )
+
+          savedProducts.push({
+            ...product,
+            databaseId: saved.id,
+            id: `db-${saved.id}`,
+          })
+        }
+      }
+
+      const savedAdditionalCosts: AdditionalCost[] = []
+
+      for (const item of priceBook.additionalCosts) {
+        const apiItem = {
+          name: item.name,
+          pricingUnit: item.pricingUnit,
+          cost: item.cost,
+          active: item.active,
+        }
+
+        if (item.databaseId) {
+          const saved =
+            await updateAdditionalCostApi(
+              item.databaseId,
+              apiItem,
+            )
+
+          savedAdditionalCosts.push({
+            ...item,
+            databaseId: saved.id,
+            id: `db-additional-${saved.id}`,
+          })
+        } else {
+          const saved =
+            await createAdditionalCost(
+              apiItem,
+            )
+
+          savedAdditionalCosts.push({
+            ...item,
+            databaseId: saved.id,
+            id: `db-additional-${saved.id}`,
+          })
+        }
+      }
+
+      const savedLaborCosts: LaborCost[] = []
+
+      for (const item of priceBook.laborCosts) {
+        const apiItem = {
+          name: item.name,
+          pricingUnit: item.pricingUnit,
+          cost: item.cost,
+          active: item.active,
+        }
+
+        if (item.databaseId) {
+          const saved =
+            await updateLaborCostApi(
+              item.databaseId,
+              apiItem,
+            )
+
+          savedLaborCosts.push({
+            ...item,
+            databaseId: saved.id,
+            id: `db-labor-${saved.id}`,
+          })
+        } else {
+          const saved =
+            await createLaborCost(
+              apiItem,
+            )
+
+          savedLaborCosts.push({
+            ...item,
+            databaseId: saved.id,
+            id: `db-labor-${saved.id}`,
+          })
+        }
+      }
+
+      let savedBusinessRules: BusinessRules
+
+      const apiBusinessRules = {
+        defaultMarkup:
+          priceBook.businessRules.defaultMarkup,
+        minimumGrossMargin:
+          priceBook.businessRules.minimumGrossMargin,
+        minimumProjectProfit:
+          priceBook.businessRules.minimumProjectProfit,
+        maximumSalesDiscount:
+          priceBook.businessRules.maximumSalesDiscount,
+        salesTax:
+          priceBook.businessRules.salesTax,
+      }
+
+      if (priceBook.businessRules.databaseId) {
+        const saved =
+          await updateBusinessRulesApi(
+            priceBook.businessRules.databaseId,
+            apiBusinessRules,
+          )
+
+        savedBusinessRules = {
+          ...priceBook.businessRules,
+          databaseId: saved.id,
+        }
+      } else {
+        const saved =
+          await createBusinessRules(
+            apiBusinessRules,
+          )
+
+        savedBusinessRules = {
+          ...priceBook.businessRules,
+          databaseId: saved.id,
+        }
+      }
+
+      const updatedPriceBook = {
+        ...priceBook,
+        products: savedProducts,
+        additionalCosts: savedAdditionalCosts,
+        laborCosts: savedLaborCosts,
+        businessRules: savedBusinessRules,
+      }
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(updatedPriceBook),
+      )
+
+      setPriceBook(updatedPriceBook)
+      setSavedPriceBook(updatedPriceBook)
+
+      setSaveMessage(
+        'Pricing database saved successfully.',
+      )
+    } catch (error) {
+      console.error(
+        'Unable to save pricing database:',
+        error,
+      )
+
+      setSaveMessage(
+        'Unable to save pricing database.',
+      )
+    }
   }
 
   function discardChanges() {
     setPriceBook(savedPriceBook)
-    setSaveMessage('Unsaved changes discarded.')
+
+    setSaveMessage(
+      'Unsaved changes discarded.',
+    )
   }
 
   function resetPricing() {
-    const confirmed = window.confirm(
-      'Reset all pricing information to the original Ply Gem / GL values?',
-    )
+    const confirmed =
+      window.confirm(
+        'Reset the pricing database to the original Ply Gem / GL values?',
+      )
 
     if (!confirmed) {
       return
@@ -535,16 +1481,24 @@ export default function PricingEngine() {
     )
 
     setPriceBook(defaultPriceBook)
-    setSavedPriceBook(defaultPriceBook)
+
+    setSavedPriceBook(
+      defaultPriceBook,
+    )
+
+    setManufacturerFilter('All')
+    setSupplierFilter('All')
+    setSearch('')
+
     setSaveMessage(
-      'Pricing information reset successfully.',
+      'Pricing database reset successfully.',
     )
   }
 
   return (
     <div className="min-h-[calc(100vh-78px)] bg-[#F7F6F2]">
       <section className="border-b border-[#E8E5DE] bg-white">
-        <div className="mx-auto max-w-[1500px] px-5 py-8 sm:px-7 lg:px-10 lg:py-10">
+        <div className="mx-auto max-w-[1600px] px-5 py-8 sm:px-7 lg:px-10 lg:py-10">
           <div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
             <div>
               <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[#B59A68]">
@@ -552,13 +1506,15 @@ export default function PricingEngine() {
               </p>
 
               <h2 className="mt-3 text-3xl font-light tracking-[-0.03em] text-[#2E2E2E] sm:text-4xl">
-                Pricing Engine
+                Price Database
               </h2>
 
               <p className="mt-4 max-w-3xl text-sm leading-7 text-[#777777] sm:text-base">
-                Enter the supplier costs used by Cronus
-                to calculate quotes from product dimensions,
-                selected options, labor and pricing rules.
+                Update supplier costs
+                directly from the portal.
+                New quotes use the saved
+                pricing information
+                automatically.
               </p>
             </div>
 
@@ -566,7 +1522,9 @@ export default function PricingEngine() {
               {hasUnsavedChanges && (
                 <button
                   type="button"
-                  onClick={discardChanges}
+                  onClick={
+                    discardChanges
+                  }
                   className="rounded-xl border border-[#DCD8CF] bg-white px-5 py-3 text-sm font-medium text-[#555555] transition hover:border-[#B59A68] hover:text-[#B59A68]"
                 >
                   Discard changes
@@ -576,10 +1534,13 @@ export default function PricingEngine() {
               <button
                 type="button"
                 onClick={savePricing}
-                disabled={!hasUnsavedChanges}
+                disabled={
+                  !hasUnsavedChanges ||
+                  !pricingDatabaseLoaded
+                }
                 className="rounded-xl bg-[#222222] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#B59A68] disabled:cursor-not-allowed disabled:bg-[#BDBDBD]"
               >
-                Save pricing
+                Save Pricing
               </button>
             </div>
           </div>
@@ -592,109 +1553,165 @@ export default function PricingEngine() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-[1500px] px-5 py-7 sm:px-7 lg:px-10 lg:py-10">
-        <section className="rounded-3xl border border-[#E5E1D9] bg-white p-6 shadow-[0_8px_30px_rgba(34,34,34,0.03)] sm:p-7">
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#B59A68]">
-              Active price book
-            </p>
-
-            <h3 className="mt-2 text-2xl font-light text-[#333333]">
-              Supplier information
-            </h3>
-          </div>
-
-          <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            <Field
-              label="Manufacturer"
-              value={priceBook.manufacturer}
-              onChange={(value) =>
-                updatePriceBookField(
-                  'manufacturer',
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Distributor"
-              value={priceBook.distributor}
-              onChange={(value) =>
-                updatePriceBookField(
-                  'distributor',
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Price Book Name"
-              value={priceBook.priceBookName}
-              onChange={(value) =>
-                updatePriceBookField(
-                  'priceBookName',
-                  value,
-                )
-              }
-            />
-
-            <Field
-              label="Effective Date"
-              type="date"
-              value={priceBook.effectiveDate}
-              onChange={(value) =>
-                updatePriceBookField(
-                  'effectiveDate',
-                  value,
-                )
-              }
-            />
-          </div>
-        </section>
-
-        <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mx-auto max-w-[1600px] px-5 py-7 sm:px-7 lg:px-10 lg:py-10">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryCard
-            label="Manufacturer"
-            value={priceBook.manufacturer || 'Not set'}
-            description={`Distributor: ${
-              priceBook.distributor || 'Not set'
-            }`}
+            label="Manufacturers"
+            value={String(
+              manufacturers.length,
+            )}
+            description="Configured manufacturers"
+          />
+
+          <SummaryCard
+            label="Suppliers"
+            value={String(
+              suppliers.length,
+            )}
+            description="Configured suppliers"
           />
 
           <SummaryCard
             label="Active Products"
-            value={String(activeProducts)}
-            description={`${priceBook.products.length} total products`}
-          />
-
-          <SummaryCard
-            label="Configured Options"
             value={String(
-              configuredAdditionalCosts,
+              activeProducts,
             )}
-            description="Options with a cost"
+            description={`${priceBook.products.length} total price rows`}
           />
 
           <SummaryCard
-            label="Configured Labor"
-            value={String(configuredLaborCosts)}
-            description="Labor items with a cost"
+            label="Effective Date"
+            value={
+              priceBook.effectiveDate ||
+              'Not set'
+            }
+            description={
+              priceBook.priceBookName
+            }
           />
         </section>
 
-        <EditableSection
-          title="Products"
-          eyebrow="Product costs"
-          description="Enter the purchase cost charged by GL for each Ply Gem product."
-          buttonLabel="Add product"
-          onAdd={addProduct}
-        >
-          <div className="overflow-x-auto">
-            <table className="min-w-[1180px] w-full">
+        <section className="mt-6 rounded-3xl border border-[#E5E1D9] bg-white p-6 shadow-[0_8px_30px_rgba(34,34,34,0.03)] sm:p-7">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#B59A68]">
+              Price database
+            </p>
+
+            <h3 className="mt-2 text-2xl font-light text-[#333333]">
+              Product Prices
+            </h3>
+
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#7A7A7A]">
+              Each row represents a
+              manufacturer, supplier,
+              product and configuration.
+              Change the cost here and
+              save the database.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-[1.3fr_0.8fr_0.8fr_auto]">
+            <input
+              type="search"
+              value={search}
+              onChange={(event) =>
+                setSearch(
+                  event.target.value,
+                )
+              }
+              placeholder="Search product, configuration, manufacturer or supplier..."
+              className="h-12 rounded-xl border border-[#DDD8CE] bg-[#FAF9F6] px-4 text-sm text-[#444444] outline-none transition placeholder:text-[#AAAAAA] focus:border-[#B59A68] focus:bg-white"
+            />
+
+            <select
+              value={
+                manufacturerFilter
+              }
+              onChange={(event) =>
+                setManufacturerFilter(
+                  event.target.value,
+                )
+              }
+              className="h-12 rounded-xl border border-[#DDD8CE] bg-[#FAF9F6] px-4 text-sm text-[#444444] outline-none transition focus:border-[#B59A68] focus:bg-white"
+            >
+              <option value="All">
+                All manufacturers
+              </option>
+
+              {manufacturers.map(
+                (manufacturer) => (
+                  <option
+                    key={manufacturer}
+                    value={
+                      manufacturer
+                    }
+                  >
+                    {manufacturer}
+                  </option>
+                ),
+              )}
+            </select>
+
+            <select
+              value={supplierFilter}
+              onChange={(event) =>
+                setSupplierFilter(
+                  event.target.value,
+                )
+              }
+              className="h-12 rounded-xl border border-[#DDD8CE] bg-[#FAF9F6] px-4 text-sm text-[#444444] outline-none transition focus:border-[#B59A68] focus:bg-white"
+            >
+              <option value="All">
+                All suppliers
+              </option>
+
+              {suppliers.map(
+                (supplier) => (
+                  <option
+                    key={supplier}
+                    value={supplier}
+                  >
+                    {supplier}
+                  </option>
+                ),
+              )}
+            </select>
+
+            <button
+              type="button"
+              onClick={addProduct}
+              className="h-12 rounded-xl bg-[#222222] px-5 text-sm font-medium text-white transition hover:bg-[#B59A68]"
+            >
+              + Add Product Price
+            </button>
+          </div>
+
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full min-w-[1700px]">
               <thead>
-                <tr className="border-b border-[#E9E5DD] text-left">
+                <tr className="border-b border-[#E9E5DD]">
+                  <TableHeading>
+                    #
+                  </TableHeading>
+
+                  <TableHeading>
+                    Manufacturer
+                  </TableHeading>
+
+                  <TableHeading>
+                    Supplier
+                  </TableHeading>
+
                   <TableHeading>
                     Product
+                  </TableHeading>
+
+                  <TableHeading>
+                    Configuration
+                  </TableHeading>
+
+                  <TableHeading>
+                    Material
                   </TableHeading>
 
                   <TableHeading>
@@ -706,15 +1723,15 @@ export default function PricingEngine() {
                   </TableHeading>
 
                   <TableHeading align="right">
-                    Standard Rate
+                    Cost
                   </TableHeading>
 
                   <TableHeading align="right">
-                    Small Opening Rate
+                    Small Opening
                   </TableHeading>
 
                   <TableHeading align="right">
-                    Small Under
+                    Under
                   </TableHeading>
 
                   <TableHeading align="center">
@@ -728,20 +1745,99 @@ export default function PricingEngine() {
               </thead>
 
               <tbody>
-                {priceBook.products.map(
-                  (product) => (
+                {filteredProducts.map(
+                  (product, index) => (
                     <tr
                       key={product.id}
                       className="border-b border-[#F0EDE7] last:border-b-0"
                     >
                       <TableCell>
+                        <span className="text-sm font-medium text-[#888888]">
+                          {index + 1}
+                        </span>
+                      </TableCell>
+
+                      <TableCell>
                         <TableInput
+                          value={product.manufacturer}
+                          onChange={(value) =>
+                            updateProduct(
+                              product.id,
+                              {
+                                manufacturer: value,
+                              },
+                            )
+                          }
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        <TableInput
+                          value={product.supplier}
+                          onChange={(value) =>
+                            updateProduct(
+                              product.id,
+                              {
+                                supplier: value,
+                              },
+                            )
+                          }
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        <TableSelect
                           value={product.name}
+                          options={
+                            product.category === 'Window'
+                              ? [...windowProductOptions]
+                              : [...doorProductOptions]
+                          }
                           onChange={(value) =>
                             updateProduct(
                               product.id,
                               {
                                 name: value,
+                                configuration:
+                                  productConfigurationOptions[
+                                  value
+                                  ]?.[0] ?? 'Standard',
+                              },
+                            )
+                          }
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        <TableSelect
+                          value={product.configuration}
+                          options={[
+                            ...(productConfigurationOptions[
+                              product.name
+                            ] ?? ['Standard']),
+                          ]}
+                          onChange={(value) =>
+                            updateProduct(
+                              product.id,
+                              {
+                                configuration: value,
+                              },
+                            )
+                          }
+                        />
+                      </TableCell>
+                       <TableCell>
+                        <TableSelect
+                          value={product.material ?? 'Vinyl'}
+                          options={[
+                            'Vinyl',
+                            'Metal',
+                          ]}
+                          onChange={(value) =>
+                            updateProduct(
+                              product.id,
+                              {
+                                material: value,
                               },
                             )
                           }
@@ -755,24 +1851,40 @@ export default function PricingEngine() {
                             'Window',
                             'Door',
                           ]}
-                          onChange={(value) =>
+                          onChange={(value) => {
+                            const nextCategory =
+                              value as ProductCategory
+
+                            const nextProduct =
+                              nextCategory === 'Window'
+                                ? windowProductOptions[0]
+                                : doorProductOptions[0]
+
                             updateProduct(
                               product.id,
                               {
-                                category:
-                                  value as ProductCategory,
+                                category: nextCategory,
+
+                                name: nextProduct,
+
+                                configuration:
+                                  productConfigurationOptions[
+                                  nextProduct
+                                  ]?.[0] ?? 'Standard',
+
                                 smallOpeningRate:
-                                  value === 'Door'
+                                  nextCategory === 'Door'
                                     ? 0
                                     : product.smallOpeningRate,
+
                                 smallOpeningThreshold:
-                                  value === 'Door'
+                                  nextCategory === 'Door'
                                     ? 0
                                     : product.smallOpeningThreshold ||
-                                      10,
+                                    10,
                               },
                             )
-                          }
+                          }}
                         />
                       </TableCell>
 
@@ -781,8 +1893,12 @@ export default function PricingEngine() {
                           value={
                             product.pricingUnit
                           }
-                          options={pricingUnits}
-                          onChange={(value) =>
+                          options={
+                            pricingUnits
+                          }
+                          onChange={(
+                            value,
+                          ) =>
                             updateProduct(
                               product.id,
                               {
@@ -794,12 +1910,14 @@ export default function PricingEngine() {
                         />
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell align="right">
                         <CurrencyInput
                           value={
                             product.standardRate
                           }
-                          onChange={(value) =>
+                          onChange={(
+                            value,
+                          ) =>
                             updateProduct(
                               product.id,
                               {
@@ -811,7 +1929,7 @@ export default function PricingEngine() {
                         />
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell align="right">
                         <CurrencyInput
                           value={
                             product.smallOpeningRate
@@ -820,7 +1938,9 @@ export default function PricingEngine() {
                             product.category ===
                             'Door'
                           }
-                          onChange={(value) =>
+                          onChange={(
+                            value,
+                          ) =>
                             updateProduct(
                               product.id,
                               {
@@ -832,17 +1952,19 @@ export default function PricingEngine() {
                         />
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell align="right">
                         <NumberInput
                           value={
                             product.smallOpeningThreshold
                           }
-                          suffix="sq. ft."
+                          suffix="sq.ft."
                           disabled={
                             product.category ===
                             'Door'
                           }
-                          onChange={(value) =>
+                          onChange={(
+                            value,
+                          ) =>
                             updateProduct(
                               product.id,
                               {
@@ -856,12 +1978,17 @@ export default function PricingEngine() {
 
                       <TableCell align="center">
                         <Toggle
-                          checked={product.active}
-                          onChange={(checked) =>
+                          checked={
+                            product.active
+                          }
+                          onChange={(
+                            checked,
+                          ) =>
                             updateProduct(
                               product.id,
                               {
-                                active: checked,
+                                active:
+                                  checked,
                               },
                             )
                           }
@@ -880,43 +2007,68 @@ export default function PricingEngine() {
                     </tr>
                   ),
                 )}
+
+                {filteredProducts.length ===
+                  0 && (
+                    <tr>
+                      <td
+                        colSpan={12}
+                        className="py-12 text-center text-sm text-[#999999]"
+                      >
+                        No products match
+                        the current filters.
+                      </td>
+                    </tr>
+                  )}
               </tbody>
             </table>
           </div>
-        </EditableSection>
+        </section>
 
         <EditableSection
           title="Options & Add-ons"
           eyebrow="Additional costs"
-          description="Enter costs for glass upgrades, grids, screens, colors and other product options."
+          description="Supplier costs for impact glass, tempered glass, grids, colors and other upgrades."
           buttonLabel="Add option"
           onAdd={addAdditionalCost}
         >
           <SimpleCostTable
-            items={priceBook.additionalCosts}
-            onUpdate={updateAdditionalCost}
-            onRemove={removeAdditionalCost}
+            items={
+              priceBook.additionalCosts
+            }
+            onUpdate={
+              updateAdditionalCost
+            }
+            onRemove={
+              removeAdditionalCost
+            }
           />
         </EditableSection>
 
         <EditableSection
           title="Labor & Project Costs"
           eyebrow="Installation costs"
-          description="Enter installation, materials, permits, engineering and other project expenses."
+          description="Installation, materials, permits, engineering and other project expenses."
           buttonLabel="Add project cost"
           onAdd={addLaborCost}
         >
           <SimpleCostTable
-            items={priceBook.laborCosts}
-            onUpdate={updateLaborCost}
-            onRemove={removeLaborCost}
+            items={
+              priceBook.laborCosts
+            }
+            onUpdate={
+              updateLaborCost
+            }
+            onRemove={
+              removeLaborCost
+            }
           />
         </EditableSection>
 
         <section className="mt-6 rounded-3xl border border-[#E5E1D9] bg-white p-6 shadow-[0_8px_30px_rgba(34,34,34,0.03)] sm:p-7">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#B59A68]">
-              Pricing rules
+              Pricing Rules
             </p>
 
             <h3 className="mt-2 text-2xl font-light text-[#333333]">
@@ -924,9 +2076,10 @@ export default function PricingEngine() {
             </h3>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-[#7A7A7A]">
-              These values will control the suggested
-              selling price, margin requirements and
-              discount limits.
+              Control markup,
+              profitability and maximum
+              discounts without changing
+              product costs.
             </p>
           </div>
 
@@ -934,7 +2087,8 @@ export default function PricingEngine() {
             <RuleField
               label="Default Markup"
               value={
-                priceBook.businessRules
+                priceBook
+                  .businessRules
                   .defaultMarkup
               }
               suffix="%"
@@ -949,7 +2103,8 @@ export default function PricingEngine() {
             <RuleField
               label="Minimum Gross Margin"
               value={
-                priceBook.businessRules
+                priceBook
+                  .businessRules
                   .minimumGrossMargin
               }
               suffix="%"
@@ -964,7 +2119,8 @@ export default function PricingEngine() {
             <RuleField
               label="Minimum Project Profit"
               value={
-                priceBook.businessRules
+                priceBook
+                  .businessRules
                   .minimumProjectProfit
               }
               prefix="$"
@@ -979,7 +2135,8 @@ export default function PricingEngine() {
             <RuleField
               label="Maximum Sales Discount"
               value={
-                priceBook.businessRules
+                priceBook
+                  .businessRules
                   .maximumSalesDiscount
               }
               suffix="%"
@@ -994,7 +2151,8 @@ export default function PricingEngine() {
             <RuleField
               label="Sales Tax"
               value={
-                priceBook.businessRules
+                priceBook
+                  .businessRules
                   .salesTax
               }
               suffix="%"
@@ -1008,61 +2166,72 @@ export default function PricingEngine() {
           </div>
         </section>
 
-        <section className="mt-6 rounded-3xl bg-[#222222] p-6 text-white sm:p-8">
-          <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr] lg:items-center">
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#B59A68]">
-                Quote calculation
-              </p>
+        <section className="mt-6 rounded-3xl border border-[#E5E1D9] bg-white p-6 sm:p-7">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <Field
+              label="Default Manufacturer"
+              value={
+                priceBook.manufacturer
+              }
+              onChange={(value) =>
+                updatePriceBookField(
+                  'manufacturer',
+                  value,
+                )
+              }
+            />
 
-              <h3 className="mt-4 text-2xl font-light tracking-[-0.02em] sm:text-3xl">
-                Cronus will use these values for
-                every new quote.
-              </h3>
+            <Field
+              label="Default Supplier"
+              value={
+                priceBook.distributor
+              }
+              onChange={(value) =>
+                updatePriceBookField(
+                  'distributor',
+                  value,
+                )
+              }
+            />
 
-              <p className="mt-4 max-w-3xl text-sm leading-7 text-white/60">
-                Product dimensions determine the square
-                footage. Cronus will select the applicable
-                Ply Gem product rate from GL, add options,
-                labor and project costs, and then apply
-                the configured pricing rules.
-              </p>
-            </div>
+            <Field
+              label="Database Name"
+              value={
+                priceBook.priceBookName
+              }
+              onChange={(value) =>
+                updatePriceBookField(
+                  'priceBookName',
+                  value,
+                )
+              }
+            />
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-              <CalculationLine
-                number="01"
-                label="Width × height ÷ 144"
-              />
-
-              <CalculationLine
-                number="02"
-                label="Select standard or small-opening rate"
-              />
-
-              <CalculationLine
-                number="03"
-                label="Add options, labor and project costs"
-              />
-
-              <CalculationLine
-                number="04"
-                label="Apply markup, margin and discount rules"
-                last
-              />
-            </div>
+            <Field
+              label="Effective Date"
+              type="date"
+              value={
+                priceBook.effectiveDate
+              }
+              onChange={(value) =>
+                updatePriceBookField(
+                  'effectiveDate',
+                  value,
+                )
+              }
+            />
           </div>
         </section>
 
         <div className="mt-6 flex flex-col justify-between gap-4 rounded-2xl border border-[#E5E1D9] bg-white p-5 sm:flex-row sm:items-center">
           <div>
             <p className="text-sm font-medium text-[#444444]">
-              Reset Pricing Engine
+              Reset Price Database
             </p>
 
             <p className="mt-1 text-sm text-[#888888]">
-              Restore the original Ply Gem pricing
-              provided by GL.
+              Restore the original Ply
+              Gem / GL pricing structure.
             </p>
           </div>
 
@@ -1190,7 +2359,10 @@ function EditableSection({
 
 type TableHeadingProps = {
   children: React.ReactNode
-  align?: 'left' | 'center' | 'right'
+  align?:
+  | 'left'
+  | 'center'
+  | 'right'
 }
 
 function TableHeading({
@@ -1200,14 +2372,15 @@ function TableHeading({
   return (
     <th
       className={`
-        px-3 py-3 text-[10px] font-medium uppercase
-        tracking-[0.14em] text-[#999999]
-        ${
-          align === 'center'
-            ? 'text-center'
-            : align === 'right'
-              ? 'text-right'
-              : 'text-left'
+        px-3 py-3 text-[10px]
+        font-medium uppercase
+        tracking-[0.14em]
+        text-[#999999]
+        ${align === 'center'
+          ? 'text-center'
+          : align === 'right'
+            ? 'text-right'
+            : 'text-left'
         }
       `}
     >
@@ -1218,7 +2391,10 @@ function TableHeading({
 
 type TableCellProps = {
   children: React.ReactNode
-  align?: 'left' | 'center' | 'right'
+  align?:
+  | 'left'
+  | 'center'
+  | 'right'
 }
 
 function TableCell({
@@ -1229,12 +2405,11 @@ function TableCell({
     <td
       className={`
         px-3 py-3 align-middle
-        ${
-          align === 'center'
-            ? 'text-center'
-            : align === 'right'
-              ? 'text-right'
-              : 'text-left'
+        ${align === 'center'
+          ? 'text-center'
+          : align === 'right'
+            ? 'text-right'
+            : 'text-left'
         }
       `}
     >
@@ -1259,7 +2434,7 @@ function TableInput({
       onChange={(event) =>
         onChange(event.target.value)
       }
-      className="w-full min-w-[180px] rounded-lg border border-[#E1DDD5] bg-white px-3 py-2.5 text-sm text-[#444444] outline-none transition focus:border-[#B59A68]"
+      className="w-full min-w-[150px] rounded-lg border border-[#E1DDD5] bg-white px-3 py-2.5 text-sm text-[#444444] outline-none transition focus:border-[#B59A68]"
     />
   )
 }
@@ -1281,7 +2456,7 @@ function TableSelect({
       onChange={(event) =>
         onChange(event.target.value)
       }
-      className="w-full min-w-[140px] rounded-lg border border-[#E1DDD5] bg-white px-3 py-2.5 text-sm text-[#444444] outline-none transition focus:border-[#B59A68]"
+      className="w-full min-w-[135px] rounded-lg border border-[#E1DDD5] bg-white px-3 py-2.5 text-sm text-[#444444] outline-none transition focus:border-[#B59A68]"
     >
       {options.map((option) => (
         <option
@@ -1309,9 +2484,14 @@ function CurrencyInput({
   return (
     <div
       className={`
-        ml-auto flex w-[130px] items-center rounded-lg
-        border border-[#E1DDD5] bg-white
-        ${disabled ? 'opacity-40' : ''}
+        ml-auto flex w-[125px]
+        items-center rounded-lg
+        border border-[#E1DDD5]
+        bg-white
+        ${disabled
+          ? 'opacity-40'
+          : ''
+        }
       `}
     >
       <span className="pl-3 text-sm text-[#999999]">
@@ -1326,7 +2506,9 @@ function CurrencyInput({
         disabled={disabled}
         onChange={(event) =>
           onChange(
-            parseNumber(event.target.value),
+            parseNumber(
+              event.target.value,
+            ),
           )
         }
         className="w-full rounded-lg bg-transparent px-2 py-2.5 text-right text-sm text-[#444444] outline-none disabled:cursor-not-allowed"
@@ -1351,9 +2533,14 @@ function NumberInput({
   return (
     <div
       className={`
-        ml-auto flex w-[145px] items-center rounded-lg
-        border border-[#E1DDD5] bg-white
-        ${disabled ? 'opacity-40' : ''}
+        ml-auto flex w-[140px]
+        items-center rounded-lg
+        border border-[#E1DDD5]
+        bg-white
+        ${disabled
+          ? 'opacity-40'
+          : ''
+        }
       `}
     >
       <input
@@ -1364,7 +2551,9 @@ function NumberInput({
         disabled={disabled}
         onChange={(event) =>
           onChange(
-            parseNumber(event.target.value),
+            parseNumber(
+              event.target.value,
+            ),
           )
         }
         className="min-w-0 flex-1 rounded-lg bg-transparent px-3 py-2.5 text-right text-sm text-[#444444] outline-none disabled:cursor-not-allowed"
@@ -1391,26 +2580,28 @@ function Toggle({
   return (
     <button
       type="button"
-      onClick={() => onChange(!checked)}
+      onClick={() =>
+        onChange(!checked)
+      }
       aria-pressed={checked}
       className={`
-        relative inline-flex h-7 w-12 rounded-full
+        relative inline-flex
+        h-7 w-12 rounded-full
         transition
-        ${
-          checked
-            ? 'bg-[#222222]'
-            : 'bg-[#D7D4CE]'
+        ${checked
+          ? 'bg-[#222222]'
+          : 'bg-[#D7D4CE]'
         }
       `}
     >
       <span
         className={`
-          absolute top-1 h-5 w-5 rounded-full
-          bg-white shadow transition
-          ${
-            checked
-              ? 'left-6'
-              : 'left-1'
+          absolute top-1 h-5 w-5
+          rounded-full bg-white
+          shadow transition
+          ${checked
+            ? 'left-6'
+            : 'left-1'
           }
         `}
       />
@@ -1444,7 +2635,9 @@ type CostItem = {
   active: boolean
 }
 
-type SimpleCostTableProps<T extends CostItem> = {
+type SimpleCostTableProps<
+  T extends CostItem,
+> = {
   items: T[]
   onUpdate: (
     id: string,
@@ -1453,14 +2646,16 @@ type SimpleCostTableProps<T extends CostItem> = {
   onRemove: (id: string) => void
 }
 
-function SimpleCostTable<T extends CostItem>({
+function SimpleCostTable<
+  T extends CostItem,
+>({
   items,
   onUpdate,
   onRemove,
 }: SimpleCostTableProps<T>) {
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-[760px] w-full">
+      <table className="w-full min-w-[760px]">
         <thead>
           <tr className="border-b border-[#E9E5DD]">
             <TableHeading>
@@ -1495,22 +2690,32 @@ function SimpleCostTable<T extends CostItem>({
                 <TableInput
                   value={item.name}
                   onChange={(value) =>
-                    onUpdate(item.id, {
-                      name: value,
-                    } as Partial<T>)
+                    onUpdate(
+                      item.id,
+                      {
+                        name: value,
+                      } as Partial<T>,
+                    )
                   }
                 />
               </TableCell>
 
               <TableCell>
                 <TableSelect
-                  value={item.pricingUnit}
-                  options={pricingUnits}
+                  value={
+                    item.pricingUnit
+                  }
+                  options={
+                    pricingUnits
+                  }
                   onChange={(value) =>
-                    onUpdate(item.id, {
-                      pricingUnit:
-                        value as PricingUnit,
-                    } as Partial<T>)
+                    onUpdate(
+                      item.id,
+                      {
+                        pricingUnit:
+                          value as PricingUnit,
+                      } as Partial<T>,
+                    )
                   }
                 />
               </TableCell>
@@ -1519,9 +2724,12 @@ function SimpleCostTable<T extends CostItem>({
                 <CurrencyInput
                   value={item.cost}
                   onChange={(value) =>
-                    onUpdate(item.id, {
-                      cost: value,
-                    } as Partial<T>)
+                    onUpdate(
+                      item.id,
+                      {
+                        cost: value,
+                      } as Partial<T>,
+                    )
                   }
                 />
               </TableCell>
@@ -1530,9 +2738,13 @@ function SimpleCostTable<T extends CostItem>({
                 <Toggle
                   checked={item.active}
                   onChange={(checked) =>
-                    onUpdate(item.id, {
-                      active: checked,
-                    } as Partial<T>)
+                    onUpdate(
+                      item.id,
+                      {
+                        active:
+                          checked,
+                      } as Partial<T>,
+                    )
                   }
                 />
               </TableCell>
@@ -1587,7 +2799,9 @@ function RuleField({
           value={value}
           onChange={(event) =>
             onChange(
-              parseNumber(event.target.value),
+              parseNumber(
+                event.target.value,
+              ),
             )
           }
           className="min-w-0 flex-1 bg-transparent px-3 py-3 text-sm text-[#333333] outline-none"
@@ -1600,48 +2814,18 @@ function RuleField({
         )}
       </div>
 
-      {label === 'Default Markup' && (
-        <p className="mt-2 text-xs text-[#999999]">
-          Example: {formatCurrency(100)} cost
-          becomes{' '}
-          {formatCurrency(
-            100 * (1 + value / 100),
-          )}
-        </p>
-      )}
+      {label ===
+        'Default Markup' && (
+          <p className="mt-2 text-xs text-[#999999]">
+            {formatCurrency(100)} cost
+            becomes{' '}
+            {formatCurrency(
+              100 *
+              (1 + value / 100),
+            )}
+          </p>
+        )}
     </label>
   )
 }
 
-type CalculationLineProps = {
-  number: string
-  label: string
-  last?: boolean
-}
-
-function CalculationLine({
-  number,
-  label,
-  last = false,
-}: CalculationLineProps) {
-  return (
-    <div
-      className={`
-        flex items-center gap-4 py-3
-        ${
-          last
-            ? ''
-            : 'border-b border-white/10'
-        }
-      `}
-    >
-      <span className="text-xs font-medium text-[#B59A68]">
-        {number}
-      </span>
-
-      <span className="text-sm text-white/75">
-        {label}
-      </span>
-    </div>
-  )
-}
