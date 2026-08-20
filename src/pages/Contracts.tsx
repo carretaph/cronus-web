@@ -3,6 +3,9 @@ import {
   useMemo,
   useState,
 } from 'react'
+
+import { getContracts } from '../services/contractsApi'
+import type { ApiContract } from '../services/contractsApi'
 import {
   Link,
   useNavigate,
@@ -55,6 +58,35 @@ type ContractRecord = {
   signatures?: Record<string, unknown>
 
   [key: string]: unknown
+}
+
+function apiContractToRecord(
+  contract: ApiContract,
+): ContractRecord {
+  let parsed: Record<string, unknown> = {}
+
+  try {
+    parsed = JSON.parse(contract.contractJson || '{}')
+  } catch {
+    parsed = {}
+  }
+
+  return {
+    ...parsed,
+    id: contract.id,
+    contractNumber: contract.contractNumber,
+    estimateNumber: contract.estimateNumber,
+    customerName: contract.customerName,
+    customerEmail: contract.customerEmail,
+    projectTotal: contract.projectTotal,
+    status: contract.status,
+    workflowStatus: contract.workflowStatus,
+    createdAt: contract.createdAt,
+    updatedAt: contract.updatedAt,
+    completedAt: contract.completedAt,
+    executedAt: contract.executedAt,
+    source: contract.source,
+  }
 }
 
 type StatusFilter =
@@ -452,6 +484,26 @@ function uniqueContracts(
 }
 
 export default function Contracts() {
+  const [apiContracts, setApiContracts] =
+    useState<ContractRecord[]>([])
+
+  useEffect(() => {
+    async function loadApiContracts() {
+      try {
+        const contracts = await getContracts()
+        setApiContracts(
+          contracts.map(apiContractToRecord),
+        )
+      } catch (error) {
+        console.error(
+          'Unable to load contracts:',
+          error,
+        )
+      }
+    }
+
+    void loadApiContracts()
+  }, [])
   const navigate = useNavigate()
 
   const [contracts, setContracts] =
@@ -473,7 +525,7 @@ export default function Contracts() {
 
   useEffect(() => {
     loadContracts()
-  }, [])
+  }, [apiContracts])
 
   function loadContracts() {
     const legacyContracts =
@@ -488,6 +540,7 @@ export default function Contracts() {
 
     const mergedContracts =
       uniqueContracts([
+        ...apiContracts,
         ...completedContracts,
         ...legacyContracts,
       ])

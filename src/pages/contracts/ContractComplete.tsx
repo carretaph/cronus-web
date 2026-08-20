@@ -6,6 +6,13 @@ import {
 } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import {
+  createContract,
+  getContractByNumber,
+  updateContract,
+} from '../../services/contractsApi'
+import type { ApiContract } from '../../services/contractsApi'
+
 const contractHandoffStorageKey =
   'cronus_contract_handoff_v1'
 
@@ -591,7 +598,7 @@ export default function ContractComplete() {
       signatures.requiredSignaturesComplete ===
       true)
 
-  function finalizeContract() {
+  async function finalizeContract() {
     setValidationMessage('')
 
     if (!signaturesReady) {
@@ -698,6 +705,59 @@ export default function ContractComplete() {
         wizardCompleted: true,
       }),
     )
+
+    try {
+      const apiContract: ApiContract = {
+        id: completed.id,
+        contractNumber: completed.contractNumber,
+        estimateNumber: completed.estimateNumber ?? '',
+        customerName: completed.customerName ?? '',
+        customerEmail: completed.customerEmail ?? '',
+        projectTotal: completed.projectTotal ?? 0,
+        status: completed.status,
+        workflowStatus: completed.workflowStatus,
+        contractJson: JSON.stringify(completed),
+        createdAt: completed.createdAt ?? now,
+        updatedAt: completed.updatedAt ?? now,
+        completedAt: completed.completedAt,
+        executedAt: completed.executedAt,
+        source: completed.source,
+        version: completed.version,
+      }
+
+      const existingApiContract =
+        await getContractByNumber(
+          completed.contractNumber,
+        )
+
+      if (existingApiContract) {
+        await updateContract(
+          existingApiContract.id,
+          {
+            ...apiContract,
+            id: existingApiContract.id,
+          },
+        )
+      } else {
+        await createContract(apiContract)
+      }
+    } catch (error) {
+      console.error(
+        'Unable to save contract to backend:',
+        error,
+      )
+
+      setValidationMessage(
+        'The contract was saved locally, but could not be synchronized with the server. Please try again.',
+      )
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
+
+      return
+    }
 
     setCompletedContract(completed)
     setDraft(completed)
