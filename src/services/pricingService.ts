@@ -45,6 +45,8 @@ type CostItem = {
 
 type BusinessRules = {
   defaultMarkup: number
+  newConstructionMarkup?: number | null
+  commercialMarkup?: number | null
   minimumGrossMargin: number
   minimumProjectProfit: number
   maximumSalesDiscount: number
@@ -888,8 +890,15 @@ export function calculateCoreProductPrice({
     supplierInstallationCost
 
   const markupPercent =
-    priceBook.businessRules
-      .defaultMarkup
+    projectType === 'new-construction'
+      ? priceBook.businessRules
+          .newConstructionMarkup ??
+        priceBook.businessRules.defaultMarkup
+      : projectType === 'commercial'
+        ? priceBook.businessRules
+            .commercialMarkup ??
+          priceBook.businessRules.defaultMarkup
+        : priceBook.businessRules.defaultMarkup
 
   const basePrice =
     applyMarkup(

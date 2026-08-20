@@ -71,6 +71,8 @@ type LaborCost = {
 type BusinessRules = {
   databaseId?: number
   defaultMarkup: number
+  newConstructionMarkup: number
+  commercialMarkup: number
   minimumGrossMargin: number
   minimumProjectProfit: number
   maximumSalesDiscount: number
@@ -476,6 +478,8 @@ const defaultPriceBook: PriceBook = {
 
   businessRules: {
     defaultMarkup: 100,
+    newConstructionMarkup: 100,
+    commercialMarkup: 100,
     minimumGrossMargin: 35,
     minimumProjectProfit: 3000,
     maximumSalesDiscount: 10,
@@ -894,6 +898,12 @@ export default function PricingEngine() {
         const businessRules: BusinessRules = {
           databaseId: rules.id,
           defaultMarkup: rules.defaultMarkup,
+          newConstructionMarkup:
+            rules.newConstructionMarkup ??
+            rules.defaultMarkup,
+          commercialMarkup:
+            rules.commercialMarkup ??
+            rules.defaultMarkup,
           minimumGrossMargin:
             rules.minimumGrossMargin,
           minimumProjectProfit:
@@ -1420,6 +1430,12 @@ export default function PricingEngine() {
       const apiBusinessRules = {
         defaultMarkup:
           priceBook.businessRules.defaultMarkup,
+        newConstructionMarkup:
+          priceBook.businessRules
+            .newConstructionMarkup,
+        commercialMarkup:
+          priceBook.businessRules
+            .commercialMarkup,
         minimumGrossMargin:
           priceBook.businessRules.minimumGrossMargin,
         minimumProjectProfit:
@@ -2109,7 +2125,7 @@ export default function PricingEngine() {
             </p>
           </div>
 
-          <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+          <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-7">
             <RuleField
               label="Default Markup"
               value={
@@ -2121,6 +2137,38 @@ export default function PricingEngine() {
               onChange={(value) =>
                 updateBusinessRule(
                   'defaultMarkup',
+                  value,
+                )
+              }
+            />
+
+            <RuleField
+              label="New Construction Markup"
+              value={
+                priceBook
+                  .businessRules
+                  .newConstructionMarkup
+              }
+              suffix="%"
+              onChange={(value) =>
+                updateBusinessRule(
+                  'newConstructionMarkup',
+                  value,
+                )
+              }
+            />
+
+            <RuleField
+              label="Commercial Markup"
+              value={
+                priceBook
+                  .businessRules
+                  .commercialMarkup
+              }
+              suffix="%"
+              onChange={(value) =>
+                updateBusinessRule(
+                  'commercialMarkup',
                   value,
                 )
               }
@@ -2970,7 +3018,7 @@ function RuleField({
 }: RuleFieldProps) {
   return (
     <label className="block">
-      <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-[#888888]">
+      <span className="block min-h-[32px] text-[11px] font-medium uppercase leading-4 tracking-[0.14em] text-[#888888]">
         {label}
       </span>
 

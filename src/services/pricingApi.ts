@@ -282,6 +282,8 @@ export async function deleteLaborCost(
 export type ApiBusinessRules = {
   id?: number
   defaultMarkup: number
+  newConstructionMarkup: number
+  commercialMarkup: number
   minimumGrossMargin: number
   minimumProjectProfit: number
   maximumSalesDiscount: number
