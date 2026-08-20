@@ -1,5 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  getQuotes,
+  type ApiQuote,
+} from '../services/quotesApi'
 
 type AppointmentDisposition =
   | 'Demo - No Sale'
@@ -89,7 +93,56 @@ export default function Quotes() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] =
     useState<'All' | QuoteStatus>('All')
-  const [quotes] = useState<StoredQuote[]>(loadQuotes)
+  const [quotes, setQuotes] = useState<StoredQuote[]>([])
+const [quotesLoading, setQuotesLoading] = useState(true)
+
+const localQuotes = loadQuotes()
+void localQuotes
+
+useEffect(() => {
+  async function loadDatabaseQuotes() {
+    try {
+      const apiQuotes = await getQuotes()
+
+      const databaseQuotes: StoredQuote[] = apiQuotes.map(
+        (quote: ApiQuote) => ({
+          id: String(quote.id ?? ''),
+          estimateNumber: quote.estimateNumber,
+          customerId: quote.customerId,
+          customerName: quote.customerName,
+          customerEmail: quote.customerEmail,
+          customerPhone: quote.customerPhone,
+          projectForm: JSON.parse(quote.projectFormJson),
+          openings: JSON.parse(quote.openingsJson),
+          discounts: JSON.parse(quote.discountsJson),
+          selectedFinancingId: quote.selectedFinancingId,
+          downPayment: quote.downPayment,
+          retailPrice: quote.retailPrice,
+          discountTotal: quote.discountTotal,
+          projectTotal: quote.projectTotal,
+          status: quote.status as QuoteStatus,
+          appointmentDisposition:
+            quote.appointmentDisposition as AppointmentDisposition | null,
+          createdAt: quote.createdAt,
+          updatedAt: quote.updatedAt,
+        }),
+      )
+
+      setQuotes(databaseQuotes)
+    } catch (error) {
+      console.error(
+        'Unable to load quotes from database:',
+        error,
+      )
+    } finally {
+      setQuotesLoading(false)
+    }
+  }
+
+  loadDatabaseQuotes()
+}, [])
+
+void quotesLoading
 
   const filteredQuotes = useMemo(() => {
     const normalizedSearch = searchTerm
