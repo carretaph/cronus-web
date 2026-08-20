@@ -63,6 +63,8 @@ type LaborCost = {
   name: string
   pricingUnit: PricingUnit
   cost: number
+  newConstructionCost: number
+  commercialCost: number
   active: boolean
 }
 
@@ -412,6 +414,8 @@ const defaultPriceBook: PriceBook = {
       name: 'Window Installation',
       pricingUnit: 'Per opening',
       cost: 0,
+      newConstructionCost: 0,
+      commercialCost: 0,
       active: true,
     },
     {
@@ -419,6 +423,8 @@ const defaultPriceBook: PriceBook = {
       name: 'Door Installation',
       pricingUnit: 'Per opening',
       cost: 0,
+      newConstructionCost: 0,
+      commercialCost: 0,
       active: true,
     },
     {
@@ -426,6 +432,8 @@ const defaultPriceBook: PriceBook = {
       name: 'Installation Materials',
       pricingUnit: 'Per opening',
       cost: 0,
+      newConstructionCost: 0,
+      commercialCost: 0,
       active: true,
     },
     {
@@ -433,6 +441,8 @@ const defaultPriceBook: PriceBook = {
       name: 'Permit',
       pricingUnit: 'Fixed',
       cost: 0,
+      newConstructionCost: 0,
+      commercialCost: 0,
       active: true,
     },
     {
@@ -440,6 +450,8 @@ const defaultPriceBook: PriceBook = {
       name: 'Engineering',
       pricingUnit: 'Fixed',
       cost: 0,
+      newConstructionCost: 0,
+      commercialCost: 0,
       active: true,
     },
     {
@@ -447,6 +459,8 @@ const defaultPriceBook: PriceBook = {
       name: 'Dumpster',
       pricingUnit: 'Fixed',
       cost: 0,
+      newConstructionCost: 0,
+      commercialCost: 0,
       active: true,
     },
     {
@@ -454,6 +468,8 @@ const defaultPriceBook: PriceBook = {
       name: 'Travel',
       pricingUnit: 'Fixed',
       cost: 0,
+      newConstructionCost: 0,
+      commercialCost: 0,
       active: true,
     },
   ],
@@ -836,6 +852,10 @@ export default function PricingEngine() {
             pricingUnit:
               item.pricingUnit as PricingUnit,
             cost: item.cost,
+            newConstructionCost:
+              item.newConstructionCost ?? item.cost,
+            commercialCost:
+              item.commercialCost ?? item.cost,
             active: item.active,
           }))
 
@@ -1185,6 +1205,8 @@ export default function PricingEngine() {
           name: 'New Project Cost',
           pricingUnit: 'Fixed',
           cost: 0,
+          newConstructionCost: 0,
+          commercialCost: 0,
           active: true,
         },
       ],
@@ -1360,6 +1382,10 @@ export default function PricingEngine() {
           name: item.name,
           pricingUnit: item.pricingUnit,
           cost: item.cost,
+          newConstructionCost:
+            item.newConstructionCost,
+          commercialCost:
+            item.commercialCost,
           active: item.active,
         }
 
@@ -2052,7 +2078,7 @@ export default function PricingEngine() {
           buttonLabel="Add project cost"
           onAdd={addLaborCost}
         >
-          <SimpleCostTable
+          <LaborCostTable
             items={
               priceBook.laborCosts
             }
@@ -2744,6 +2770,169 @@ function SimpleCostTable<
                         active:
                           checked,
                       } as Partial<T>,
+                    )
+                  }
+                />
+              </TableCell>
+
+              <TableCell align="right">
+                <DeleteButton
+                  onClick={() =>
+                    onRemove(item.id)
+                  }
+                />
+              </TableCell>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+
+type LaborCostTableProps = {
+  items: LaborCost[]
+  onUpdate: (
+    id: string,
+    changes: Partial<LaborCost>,
+  ) => void
+  onRemove: (id: string) => void
+}
+
+function LaborCostTable({
+  items,
+  onUpdate,
+  onRemove,
+}: LaborCostTableProps) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[1100px]">
+        <thead>
+          <tr className="border-b border-[#E9E5DD]">
+            <TableHeading>
+              Item
+            </TableHeading>
+
+            <TableHeading>
+              Calculation
+            </TableHeading>
+
+            <TableHeading align="right">
+              Replacement
+            </TableHeading>
+
+            <TableHeading align="right">
+              New Construction
+            </TableHeading>
+
+            <TableHeading align="right">
+              Commercial
+            </TableHeading>
+
+            <TableHeading align="center">
+              Active
+            </TableHeading>
+
+            <TableHeading align="right">
+              Action
+            </TableHeading>
+          </tr>
+        </thead>
+
+        <tbody>
+          {items.map((item) => (
+            <tr
+              key={item.id}
+              className="border-b border-[#F0EDE7] last:border-b-0"
+            >
+              <TableCell>
+                <TableInput
+                  value={item.name}
+                  onChange={(value) =>
+                    onUpdate(
+                      item.id,
+                      {
+                        name: value,
+                      },
+                    )
+                  }
+                />
+              </TableCell>
+
+              <TableCell>
+                <TableSelect
+                  value={item.pricingUnit}
+                  options={pricingUnits}
+                  onChange={(value) =>
+                    onUpdate(
+                      item.id,
+                      {
+                        pricingUnit:
+                          value as PricingUnit,
+                      },
+                    )
+                  }
+                />
+              </TableCell>
+
+              <TableCell align="right">
+                <CurrencyInput
+                  value={item.cost}
+                  onChange={(value) =>
+                    onUpdate(
+                      item.id,
+                      {
+                        cost: value,
+                      },
+                    )
+                  }
+                />
+              </TableCell>
+
+              <TableCell align="right">
+                <CurrencyInput
+                  value={
+                    item.newConstructionCost
+                  }
+                  onChange={(value) =>
+                    onUpdate(
+                      item.id,
+                      {
+                        newConstructionCost:
+                          value,
+                      },
+                    )
+                  }
+                />
+              </TableCell>
+
+              <TableCell align="right">
+                <CurrencyInput
+                  value={
+                    item.commercialCost
+                  }
+                  onChange={(value) =>
+                    onUpdate(
+                      item.id,
+                      {
+                        commercialCost:
+                          value,
+                      },
+                    )
+                  }
+                />
+              </TableCell>
+
+              <TableCell align="center">
+                <Toggle
+                  checked={item.active}
+                  onChange={(checked) =>
+                    onUpdate(
+                      item.id,
+                      {
+                        active: checked,
+                      },
                     )
                   }
                 />

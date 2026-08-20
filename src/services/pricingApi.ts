@@ -191,6 +191,8 @@ export type ApiLaborCost = {
   name: string
   pricingUnit: string
   cost: number
+  newConstructionCost: number | null
+  commercialCost: number | null
   active: boolean
 }
 

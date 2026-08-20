@@ -14,6 +14,11 @@ export type PricingUnit =
   | 'Per linear ft.'
   | 'Per mile'
 
+export type ProjectType =
+  | 'replacement'
+  | 'new-construction'
+  | 'commercial'
+
 type ProductCategory = 'Window' | 'Door'
 
 type ProductPrice = {
@@ -33,6 +38,8 @@ type CostItem = {
   name: string
   pricingUnit: PricingUnit
   cost: number
+  newConstructionCost?: number | null
+  commercialCost?: number | null
   active: boolean
 }
 
@@ -62,6 +69,7 @@ export type CoreProductPriceInput = {
   configuration?: string
   isDoor: boolean
   impact: boolean
+  projectType?: ProjectType
   tempered?: boolean
   tinted?: boolean
   privacyGlass?: boolean
@@ -635,6 +643,7 @@ export function calculateCoreProductPrice({
   configuration,
   isDoor,
   impact,
+  projectType = 'replacement',
   tempered = false,
   tinted = false,
   privacyGlass = false,
@@ -844,9 +853,24 @@ export function calculateCoreProductPrice({
         )
       : 0
 
+  const selectedInstallationItem =
+    installationItem
+      ? {
+          ...installationItem,
+          cost:
+            projectType === 'new-construction'
+              ? installationItem.newConstructionCost ??
+                installationItem.cost
+              : projectType === 'commercial'
+                ? installationItem.commercialCost ??
+                  installationItem.cost
+                : installationItem.cost,
+        }
+      : undefined
+
   const supplierInstallationCost =
     calculateConfiguredCost(
-      installationItem,
+      selectedInstallationItem,
       squareFeet,
       linearFeet,
       supplierBaseCost,

@@ -8,9 +8,13 @@ import { getCustomers } from '../services/customersApi'
 import type { ApiCustomer } from '../services/customersApi'
 import OpeningManager from './OpeningManager'
 import type { Opening } from './OpeningManager'
-import { calculateCoreProductPrice } from '../services/pricingService'
+import {
+  calculateCoreProductPrice,
+  type ProjectType,
+} from '../services/pricingService'
 
 type ProjectForm = {
+  projectType: ProjectType
   projectName: string
   projectAddress: string
   salesperson: string
@@ -162,6 +166,7 @@ function createNextEstimateNumber() {
 }
 
 const defaultProjectForm: ProjectForm = {
+  projectType: 'replacement',
   projectName: '',
   projectAddress: '',
   salesperson: 'Alberto',
@@ -248,6 +253,7 @@ type PricedProduct = {
 function calculateProductPrice(
   opening: Opening,
   product: Opening['products'][number],
+  projectType: ProjectType,
 ) {
   const isDoor = doorCategories.has(
     product.productCategory,
@@ -260,6 +266,7 @@ function calculateProductPrice(
   configuration: product.configuration,
   isDoor,
   impact: Boolean(opening.impact),
+  projectType,
   tempered: product.tempered === 'Yes',
   tinted: product.tinted === 'Yes',
   privacyGlass:
@@ -272,6 +279,7 @@ function calculateProductPrice(
 
 function getPricedProducts(
   openings: Opening[],
+  projectType: ProjectType,
 ): PricedProduct[] {
   return openings.flatMap((opening) =>
     opening.products.map((product) => ({
@@ -282,6 +290,7 @@ function getPricedProducts(
       price: calculateProductPrice(
         opening,
         product,
+        projectType,
       ),
     })),
   )
@@ -332,13 +341,20 @@ function calculateBogoSavings(
   }
 }
 
-function calculateRetailPrice(openings: Opening[]) {
+function calculateRetailPrice(
+  openings: Opening[],
+  projectType: ProjectType,
+) {
   return openings.reduce((projectTotal, opening) => {
     const productsTotal = opening.products.reduce(
       (openingTotal, product) => {
         return (
           openingTotal +
-          calculateProductPrice(opening, product)
+          calculateProductPrice(
+            opening,
+            product,
+            projectType,
+          )
         )
       },
       0,
@@ -666,13 +682,21 @@ export default function NewQuote() {
   }
 
   const retailPrice = useMemo(
-    () => calculateRetailPrice(openings),
-    [openings],
+    () =>
+      calculateRetailPrice(
+        openings,
+        projectForm.projectType,
+      ),
+    [openings, projectForm.projectType],
   )
 
   const pricedProducts = useMemo(
-    () => getPricedProducts(openings),
-    [openings],
+    () =>
+      getPricedProducts(
+        openings,
+        projectForm.projectType,
+      ),
+    [openings, projectForm.projectType],
   )
 
   const activeDiscounts = useMemo(
@@ -1153,10 +1177,11 @@ export default function NewQuote() {
           price: calculateProductPrice(
             opening,
             product,
+            projectForm.projectType,
           ),
         })),
       ),
-    [openings],
+    [openings, projectForm.projectType],
   )
 
   const estimateDiscountRows = useMemo(
@@ -1314,6 +1339,49 @@ export default function NewQuote() {
           >
             Back to quotes
           </Link>
+        </div>
+
+        <div className="mt-8">
+          <div className="inline-flex flex-wrap gap-2 rounded-2xl border border-[#E5E1D9] bg-white p-2 shadow-sm">
+            {[
+              {
+                value: 'replacement',
+                label: 'Replacement',
+              },
+              {
+                value: 'new-construction',
+                label: 'New Construction',
+              },
+              {
+                value: 'commercial',
+                label: 'Commercial',
+              },
+            ].map((option) => {
+              const selected =
+                projectForm.projectType ===
+                option.value
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() =>
+                    updateProjectField(
+                      'projectType',
+                      option.value as ProjectType,
+                    )
+                  }
+                  className={`rounded-xl px-5 py-3 text-sm font-medium transition ${
+                    selected
+                      ? 'bg-[#222222] text-white shadow-sm'
+                      : 'bg-transparent text-[#777777] hover:bg-[#F5F2EC] hover:text-[#444444]'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         <div className="mt-10 grid gap-7 xl:grid-cols-[0.85fr_1.15fr]">
