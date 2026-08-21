@@ -103,41 +103,50 @@ export default function PortalLayout() {
               end
             />
 
-            <PortalNavLink
-              to="/portal/customers"
-              label="Customers"
-              icon={<CustomersIcon />}
-              onClick={closeMobileMenu}
-            />
+            {user?.canViewCustomers && (
+              <PortalNavLink
+                to="/portal/customers"
+                label="Customers"
+                icon={<CustomersIcon />}
+                onClick={closeMobileMenu}
+              />
+            )}
 
-            <PortalNavLink
-              to="/portal/quotes"
-              label="Quotes"
-              icon={<QuoteIcon />}
-              onClick={closeMobileMenu}
-            />
+            {user?.canViewQuotes && (
+              <PortalNavLink
+                to="/portal/quotes"
+                label="Quotes"
+                icon={<QuoteIcon />}
+                onClick={closeMobileMenu}
+              />
+            )}
 
-            <PortalNavLink
-              to="/portal/contracts"
-              label="Contracts"
-              icon={<ContractIcon />}
-              onClick={closeMobileMenu}
-            />
+            {user?.canViewContracts && (
+              <PortalNavLink
+                to="/portal/contracts"
+                label="Contracts"
+                icon={<ContractIcon />}
+                onClick={closeMobileMenu}
+              />
+            )}
 
-            <PortalNavLink
-              to="/portal/pricing"
-              label="Pricing Engine"
-              icon={<DatabaseIcon />}
-              onClick={closeMobileMenu}
-            />
+            {user?.canViewPricing && (
+              <PortalNavLink
+                to="/portal/pricing"
+                label="Pricing Engine"
+                icon={<DatabaseIcon />}
+                onClick={closeMobileMenu}
+              />
+            )}
 
-            <PortalNavLink
-              to="/portal/users"
-              label="Users"
-              icon={<UsersIcon />}
-              onClick={closeMobileMenu}
-              disabled
-            />
+            {user?.canManageUsers && (
+              <PortalNavLink
+                to="/portal/users"
+                label="Users"
+                icon={<UsersIcon />}
+                onClick={closeMobileMenu}
+              />
+            )}
           </nav>
 
           <div className="absolute bottom-6 left-5 right-5 rounded-2xl bg-[#222222] p-5 text-white">

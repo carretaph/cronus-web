@@ -10,6 +10,7 @@ import Contact from './pages/Contact'
 import About from './pages/About'
 
 import Login from './pages/Login'
+import ChangePassword from './pages/ChangePassword'
 import Portal from './pages/Portal'
 import Customers from './pages/Customers'
 import Quotes from './pages/Quotes'
@@ -17,6 +18,7 @@ import NewQuote from './pages/NewQuote'
 import OpeningManager from './pages/OpeningManager'
 import Contracts from './pages/Contracts'
 import PricingEngine from './pages/PricingEngine'
+import Users from './pages/Users'
 
 import ContractCustomer from './pages/contracts/ContractCustomer'
 import ContractProject from './pages/contracts/ContractProject'
@@ -81,6 +83,11 @@ export default function App() {
         element={<Login />}
       />
 
+      <Route
+        path="/change-password"
+        element={<ChangePassword />}
+      />
+
       {/* Private portal */}
       <Route
         path="/portal"
@@ -99,13 +106,21 @@ export default function App() {
         {/* Customers */}
         <Route
           path="customers"
-          element={<Customers />}
+          element={
+            <ProtectedRoute requiredPermission="canViewCustomers">
+              <Customers />
+            </ProtectedRoute>
+          }
         />
 
         {/* Quotes */}
         <Route
           path="quotes"
-          element={<Quotes />}
+          element={
+            <ProtectedRoute requiredPermission="canViewQuotes">
+              <Quotes />
+            </ProtectedRoute>
+          }
         />
 
         <Route
@@ -121,13 +136,31 @@ export default function App() {
         {/* Contracts */}
         <Route
           path="contracts"
-          element={<Contracts />}
+          element={
+            <ProtectedRoute requiredPermission="canViewContracts">
+              <Contracts />
+            </ProtectedRoute>
+          }
         />
 
         {/* Pricing Engine */}
         <Route
           path="pricing"
-          element={<PricingEngine />}
+          element={
+            <ProtectedRoute requiredPermission="canViewPricing">
+              <PricingEngine />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Users */}
+        <Route
+          path="users"
+          element={
+            <ProtectedRoute requiredPermission="canManageUsers">
+              <Users />
+            </ProtectedRoute>
+          }
         />
 
         {/* Contract wizard - Step 1 */}

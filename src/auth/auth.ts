@@ -1,10 +1,45 @@
-const AUTH_STORAGE_KEY = 'cronus_portal_authenticated'
-const USER_STORAGE_KEY = 'cronus_portal_user'
+const AUTH_STORAGE_KEY =
+  'cronus_portal_authenticated'
+
+const USER_STORAGE_KEY =
+  'cronus_portal_user'
+
+const API_BASE_URL =
+  import.meta.env.VITE_CRONUS_API_URL ??
+  'https://cronus-backend.onrender.com'
+
+export type CronusUserRole =
+  | 'ADMIN'
+  | 'MANAGER'
+  | 'SALES'
 
 export type CronusUser = {
+  id: string
   name: string
   email: string
-  role: 'admin' | 'sales'
+  role: CronusUserRole
+  active: boolean
+
+  canViewCustomers: boolean
+  canManageCustomers: boolean
+
+  canViewQuotes: boolean
+  canManageQuotes: boolean
+
+  canViewContracts: boolean
+  canManageContracts: boolean
+
+  canViewPricing: boolean
+  canManagePricing: boolean
+
+  canManageUsers: boolean
+
+  mustChangePassword?: boolean | null
+  lastLoginAt?: string | null
+  managerId?: string | null
+
+  createdAt?: string
+  updatedAt?: string
 }
 
 type LoginResult = {
@@ -13,80 +48,128 @@ type LoginResult = {
   user?: CronusUser
 }
 
-const authorizedUsers = [
-  {
-    email: 'carretaph@gmail.com',
-    password: 'Cronus123@',
-    name: 'Alberto Perez',
-    role: 'admin' as const,
-  },
-  {
-    email: 'daniel.cronus@gmail.com',
-    password: 'Cronus123@',
-    name: 'Daniel',
-    role: 'admin' as const,
-  },
-]
-
-export function loginUser(
+export async function loginUser(
   email: string,
   password: string,
-): LoginResult {
-  const normalizedEmail = email.trim().toLowerCase()
+): Promise<LoginResult> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/users/login`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      },
+    )
 
-  const matchingUser = authorizedUsers.find(
-    (user) =>
-      user.email.toLowerCase() === normalizedEmail &&
-      user.password === password,
-  )
+    if (!response.ok) {
+      let message =
+        'Incorrect email or password.'
 
-  if (!matchingUser) {
+      try {
+        const responseText =
+          await response.text()
+
+        if (responseText.trim()) {
+          message = responseText
+        }
+      } catch {
+        // Keep default message
+      }
+
+      return {
+        success: false,
+        message,
+      }
+    }
+
+    const user =
+      (await response.json()) as CronusUser
+
+    if (!user.active) {
+      return {
+        success: false,
+        message:
+          'This account is inactive.',
+      }
+    }
+
+    localStorage.setItem(
+      AUTH_STORAGE_KEY,
+      'true',
+    )
+
+    localStorage.setItem(
+      USER_STORAGE_KEY,
+      JSON.stringify(user),
+    )
+
+    return {
+      success: true,
+      user,
+    }
+  } catch (error) {
+    console.error(
+      'Unable to sign in:',
+      error,
+    )
+
     return {
       success: false,
-      message: 'Incorrect email or password.',
+      message:
+        'Unable to connect to the Cronus server.',
     }
-  }
-
-  const authenticatedUser: CronusUser = {
-    name: matchingUser.name,
-    email: matchingUser.email,
-    role: matchingUser.role,
-  }
-
-  localStorage.setItem(AUTH_STORAGE_KEY, 'true')
-  localStorage.setItem(
-    USER_STORAGE_KEY,
-    JSON.stringify(authenticatedUser),
-  )
-
-  return {
-    success: true,
-    user: authenticatedUser,
   }
 }
 
 export function logoutUser() {
-  localStorage.removeItem(AUTH_STORAGE_KEY)
-  localStorage.removeItem(USER_STORAGE_KEY)
+  localStorage.removeItem(
+    AUTH_STORAGE_KEY,
+  )
+
+  localStorage.removeItem(
+    USER_STORAGE_KEY,
+  )
 }
 
 export function isAuthenticated() {
   return (
-    localStorage.getItem(AUTH_STORAGE_KEY) === 'true'
+    localStorage.getItem(
+      AUTH_STORAGE_KEY,
+    ) === 'true' &&
+    getAuthenticatedUser() !== null
   )
 }
 
-export function getAuthenticatedUser(): CronusUser | null {
-  const storedUser = localStorage.getItem(
-    USER_STORAGE_KEY,
-  )
+export function getAuthenticatedUser():
+  CronusUser | null {
+  const storedUser =
+    localStorage.getItem(
+      USER_STORAGE_KEY,
+    )
 
   if (!storedUser) {
     return null
   }
 
   try {
-    return JSON.parse(storedUser) as CronusUser
+    const user =
+      JSON.parse(
+        storedUser,
+      ) as CronusUser
+
+    if (!user.active) {
+      logoutUser()
+      return null
+    }
+
+    return user
   } catch {
     logoutUser()
     return null

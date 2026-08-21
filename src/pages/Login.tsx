@@ -33,7 +33,7 @@ export default function Login() {
 
   const destination = locationState?.from || '/portal'
 
-  function handleSubmit(
+  async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault()
@@ -41,13 +41,23 @@ export default function Login() {
     setErrorMessage('')
     setIsSubmitting(true)
 
-    const result = loginUser(email, password)
+    const result =
+      await loginUser(email, password)
 
     if (!result.success) {
       setErrorMessage(
         result.message || 'Unable to sign in.',
       )
       setIsSubmitting(false)
+      return
+    }
+
+    if (
+      result.user?.mustChangePassword
+    ) {
+      navigate('/change-password', {
+        replace: true,
+      })
       return
     }
 
