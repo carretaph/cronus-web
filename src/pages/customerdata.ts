@@ -10,6 +10,10 @@ export type Customer = {
     zipCode: string
     notes: string
     createdAt: string
+
+    ownerUserId?: string | null
+    ownerName?: string | null
+    ownerManagerName?: string | null
   }
   
   const CUSTOMERS_STORAGE_KEY = 'cronus_customers'

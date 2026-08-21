@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom'
+
 import type { ReactNode } from 'react'
+
 import type { Customer } from '../../pages/customerdata'
+
+import {
+  getAuthenticatedUser,
+} from '../../auth/auth'
 
 type CustomerTableProps = {
   customers: Customer[]
@@ -11,18 +17,54 @@ export default function CustomerTable({
   customers,
   onDelete,
 }: CustomerTableProps) {
+  const user = getAuthenticatedUser()
+
+  const showOwnership =
+    user?.role === 'ADMIN' ||
+    user?.role === 'MANAGER'
+
   return (
     <div className="mt-6 overflow-hidden rounded-[22px] border border-[#E8E5DE] bg-white">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1050px] border-collapse">
+        <table className="w-full min-w-[1300px] border-collapse">
           <thead>
             <tr className="border-b border-[#E8E5DE] bg-[#FAF9F6]">
-              <TableHeader>Customer</TableHeader>
-              <TableHeader>Phone</TableHeader>
-              <TableHeader>Email</TableHeader>
-              <TableHeader>City</TableHeader>
-              <TableHeader>Status</TableHeader>
-              <TableHeader>Quotes</TableHeader>
+              <TableHeader>
+                Customer
+              </TableHeader>
+
+              <TableHeader>
+                Phone
+              </TableHeader>
+
+              <TableHeader>
+                Email
+              </TableHeader>
+
+              <TableHeader>
+                City
+              </TableHeader>
+
+              <TableHeader>
+                Status
+              </TableHeader>
+
+              {showOwnership && (
+                <>
+                  <TableHeader>
+                    Owner
+                  </TableHeader>
+
+                  <TableHeader>
+                    Manager
+                  </TableHeader>
+                </>
+              )}
+
+              <TableHeader>
+                Quotes
+              </TableHeader>
+
               <TableHeader align="right">
                 Actions
               </TableHeader>
@@ -30,13 +72,18 @@ export default function CustomerTable({
           </thead>
 
           <tbody>
-            {customers.map((customer) => (
-              <CustomerRow
-                key={customer.id}
-                customer={customer}
-                onDelete={onDelete}
-              />
-            ))}
+            {customers.map(
+              (customer) => (
+                <CustomerRow
+                  key={customer.id}
+                  customer={customer}
+                  onDelete={onDelete}
+                  showOwnership={
+                    showOwnership
+                  }
+                />
+              ),
+            )}
           </tbody>
         </table>
       </div>
@@ -47,11 +94,13 @@ export default function CustomerTable({
 type CustomerRowProps = {
   customer: Customer
   onDelete: (customerId: string) => void
+  showOwnership: boolean
 }
 
 function CustomerRow({
   customer,
   onDelete,
+  showOwnership,
 }: CustomerRowProps) {
   const fullName =
     `${customer.firstName} ${customer.lastName}`.trim()
@@ -71,6 +120,7 @@ function CustomerRow({
             {customer.firstName
               .charAt(0)
               .toUpperCase()}
+
             {customer.lastName
               .charAt(0)
               .toUpperCase()}
@@ -82,7 +132,8 @@ function CustomerRow({
             </p>
 
             <p className="mt-1 max-w-[250px] truncate text-xs text-[#999999]">
-              {customer.address || 'No address provided'}
+              {customer.address ||
+                'No address provided'}
             </p>
           </div>
         </div>
@@ -93,11 +144,13 @@ function CustomerRow({
       </td>
 
       <td className="px-6 py-5 text-sm text-[#555555]">
-        {customer.email || 'Not provided'}
+        {customer.email ||
+          'Not provided'}
       </td>
 
       <td className="px-6 py-5 text-sm text-[#555555]">
-        {location || 'Not provided'}
+        {location ||
+          'Not provided'}
       </td>
 
       <td className="px-6 py-5">
@@ -105,6 +158,20 @@ function CustomerRow({
           Customer
         </span>
       </td>
+
+      {showOwnership && (
+        <>
+          <td className="px-6 py-5 text-sm text-[#555555]">
+            {customer.ownerName ||
+              'Unassigned'}
+          </td>
+
+          <td className="px-6 py-5 text-sm text-[#555555]">
+            {customer.ownerManagerName ||
+              '—'}
+          </td>
+        </>
+      )}
 
       <td className="px-6 py-5 text-sm text-[#555555]">
         0
@@ -129,7 +196,9 @@ function CustomerRow({
 
           <button
             type="button"
-            onClick={() => onDelete(customer.id)}
+            onClick={() =>
+              onDelete(customer.id)
+            }
             className="rounded-lg px-3 py-2 text-xs font-medium text-[#AAAAAA] transition hover:bg-red-50 hover:text-red-600"
           >
             Delete
