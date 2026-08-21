@@ -5,6 +5,10 @@ import {
   type ApiQuote,
 } from '../services/quotesApi'
 
+import {
+  getAuthenticatedUser,
+} from '../auth/auth'
+
 type AppointmentDisposition =
   | 'Demo - No Sale'
   | 'Sale'
@@ -44,6 +48,12 @@ type StoredQuote = {
   projectTotal: number
   status: QuoteStatus
   appointmentDisposition: AppointmentDisposition | null
+
+  ownerUserId?: string | null
+  ownerName?: string | null
+  ownerManagerId?: string | null
+  ownerManagerName?: string | null
+
   createdAt: string
   updatedAt: string
 }
@@ -90,6 +100,12 @@ function formatDate(value: string) {
 }
 
 export default function Quotes() {
+  const user = getAuthenticatedUser()
+
+  const showOwnership =
+    user?.role === 'ADMIN' ||
+    user?.role === 'MANAGER'
+
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] =
     useState<'All' | QuoteStatus>('All')
@@ -123,6 +139,19 @@ useEffect(() => {
           status: quote.status as QuoteStatus,
           appointmentDisposition:
             quote.appointmentDisposition as AppointmentDisposition | null,
+
+          ownerUserId:
+            quote.ownerUserId ?? null,
+
+          ownerName:
+            quote.ownerName ?? null,
+
+          ownerManagerId:
+            quote.ownerManagerId ?? null,
+
+          ownerManagerName:
+            quote.ownerManagerName ?? null,
+
           createdAt: quote.createdAt,
           updatedAt: quote.updatedAt,
         }),
@@ -292,7 +321,7 @@ void quotesLoading
               {filteredQuotes.map((quote) => (
                 <article
                   key={quote.id}
-                  className="grid gap-5 px-6 py-6 transition hover:bg-[#FCFBF8] sm:px-8 xl:grid-cols-[1.3fr_1.2fr_0.7fr_0.7fr_auto] xl:items-center"
+                  className="grid gap-5 px-6 py-6 transition hover:bg-[#FCFBF8] sm:px-8 xl:grid-cols-[1.2fr_1.1fr_0.7fr_0.7fr_0.8fr_auto] xl:items-center"
                 >
                   <div>
                     <div className="flex flex-wrap items-center gap-3">
@@ -344,6 +373,23 @@ void quotesLoading
                       {quote.projectForm.salesperson || '—'}
                     </p>
                   </div>
+
+                  {showOwnership && (
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.12em] text-[#AAA39A]">
+                        Owner
+                      </p>
+
+                      <p className="mt-2 font-medium text-[#555555]">
+                        {quote.ownerName || 'Unassigned'}
+                      </p>
+
+                      <p className="mt-1 text-xs text-[#999999]">
+                        Manager:{' '}
+                        {quote.ownerManagerName || '—'}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="flex flex-wrap gap-3 xl:justify-end">
                     <Link

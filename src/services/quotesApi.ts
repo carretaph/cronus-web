@@ -1,5 +1,10 @@
+import {
+  getAuthorizationHeaders,
+} from '../auth/auth'
+
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_CRONUS_API_URL ??
+  import.meta.env.VITE_API_BASE_URL ??
   'https://cronus-backend.onrender.com'
 
 export type ApiQuote = {
@@ -21,10 +26,23 @@ export type ApiQuote = {
   appointmentDisposition: string | null
   createdAt: string
   updatedAt: string
+
+  ownerUserId?: string | null
+  ownerName?: string | null
+  ownerManagerId?: string | null
+  ownerManagerName?: string | null
 }
 
-export async function getQuotes(): Promise<ApiQuote[]> {
-  const response = await fetch(`${API_BASE_URL}/api/quotes`)
+export async function getQuotes():
+  Promise<ApiQuote[]> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/quotes`,
+    {
+      headers: {
+        ...getAuthorizationHeaders(),
+      },
+    },
+  )
 
   if (!response.ok) {
     throw new Error(
@@ -38,13 +56,18 @@ export async function getQuotes(): Promise<ApiQuote[]> {
 export async function createQuote(
   quote: ApiQuote,
 ): Promise<ApiQuote> {
-  const response = await fetch(`${API_BASE_URL}/api/quotes`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await fetch(
+    `${API_BASE_URL}/api/quotes`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type':
+          'application/json',
+        ...getAuthorizationHeaders(),
+      },
+      body: JSON.stringify(quote),
     },
-    body: JSON.stringify(quote),
-  })
+  )
 
   if (!response.ok) {
     throw new Error(
@@ -64,7 +87,9 @@ export async function updateQuote(
     {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type':
+          'application/json',
+        ...getAuthorizationHeaders(),
       },
       body: JSON.stringify(quote),
     },
@@ -86,6 +111,11 @@ export async function getQuoteByEstimateNumber(
     `${API_BASE_URL}/api/quotes/estimate/${encodeURIComponent(
       estimateNumber,
     )}`,
+    {
+      headers: {
+        ...getAuthorizationHeaders(),
+      },
+    },
   )
 
   if (response.status === 404) {
