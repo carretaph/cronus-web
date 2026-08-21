@@ -11,6 +11,10 @@ import {
   useNavigate,
 } from 'react-router-dom'
 
+import {
+  getAuthenticatedUser,
+} from '../auth/auth'
+
 const legacyContractsStorageKey =
   'cronus_contracts_v1'
 
@@ -51,6 +55,11 @@ type ContractRecord = {
   executedAt?: string
   source?: string
 
+  ownerUserId?: string | null
+  ownerName?: string | null
+  ownerManagerId?: string | null
+  ownerManagerName?: string | null
+
   customer?: Record<string, unknown>
   customerForm?: Record<string, unknown>
   products?: Record<string, unknown>
@@ -86,6 +95,18 @@ function apiContractToRecord(
     completedAt: contract.completedAt,
     executedAt: contract.executedAt,
     source: contract.source,
+
+    ownerUserId:
+      contract.ownerUserId ?? null,
+
+    ownerName:
+      contract.ownerName ?? null,
+
+    ownerManagerId:
+      contract.ownerManagerId ?? null,
+
+    ownerManagerName:
+      contract.ownerManagerName ?? null,
   }
 }
 
@@ -484,6 +505,12 @@ function uniqueContracts(
 }
 
 export default function Contracts() {
+  const user = getAuthenticatedUser()
+
+  const showOwnership =
+    user?.role === 'ADMIN' ||
+    user?.role === 'MANAGER'
+
   const [apiContracts, setApiContracts] =
     useState<ContractRecord[]>([])
 
@@ -1056,7 +1083,7 @@ export default function Contracts() {
               <table className="w-full table-fixed">
                 <thead className="bg-[#F8F8F8]">
                   <tr>
-                    <th className="w-[19%] px-6 py-4 text-left text-xs font-medium uppercase tracking-[0.1em] text-[#888888]">
+                    <th className="w-[9%] px-6 py-4 text-left text-xs font-medium uppercase tracking-[0.1em] text-[#888888]">
                       Contract
                     </th>
 
@@ -1064,11 +1091,17 @@ export default function Contracts() {
                       Estimate
                     </th>
 
-                    <th className="w-[23%] px-6 py-4 text-left text-xs font-medium uppercase tracking-[0.1em] text-[#888888]">
+                    <th className="w-[19%] px-6 py-4 text-left text-xs font-medium uppercase tracking-[0.1em] text-[#888888]">
                       Customer
                     </th>
 
-                    <th className="w-[14%] px-6 py-4 text-left text-xs font-medium uppercase tracking-[0.1em] text-[#888888]">
+                    {showOwnership && (
+                      <th className="w-[16%] px-6 py-4 text-left text-xs font-medium uppercase tracking-[0.1em] text-[#888888]">
+                        Owner
+                      </th>
+                    )}
+
+                    <th className="w-[12%] px-6 py-4 text-left text-xs font-medium uppercase tracking-[0.1em] text-[#888888]">
                       Date
                     </th>
 
@@ -1149,6 +1182,21 @@ export default function Contracts() {
                               </p>
                             )}
                           </td>
+
+                          {showOwnership && (
+                            <td className="px-6 py-5">
+                              <p className="truncate text-sm font-medium text-[#555555]">
+                                {contract.ownerName ||
+                                  'Unassigned'}
+                              </p>
+
+                              <p className="mt-1 truncate text-xs text-[#999999]">
+                                Manager:{' '}
+                                {contract.ownerManagerName ||
+                                  '—'}
+                              </p>
+                            </td>
+                          )}
 
                           <td className="px-6 py-5 text-sm text-[#777777]">
                             {formatDate(

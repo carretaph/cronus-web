@@ -1,5 +1,10 @@
+import {
+  getAuthorizationHeaders,
+} from '../auth/auth'
+
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_CRONUS_API_URL ??
+  import.meta.env.VITE_API_BASE_URL ??
   'https://cronus-backend.onrender.com'
 
 export type ApiContract = {
@@ -18,10 +23,23 @@ export type ApiContract = {
   executedAt: string
   source: string
   version: number
+
+  ownerUserId?: string | null
+  ownerName?: string | null
+  ownerManagerId?: string | null
+  ownerManagerName?: string | null
 }
 
-export async function getContracts(): Promise<ApiContract[]> {
-  const response = await fetch(`${API_BASE_URL}/api/contracts`)
+export async function getContracts():
+  Promise<ApiContract[]> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/contracts`,
+    {
+      headers: {
+        ...getAuthorizationHeaders(),
+      },
+    },
+  )
 
   if (!response.ok) {
     throw new Error(
@@ -35,13 +53,17 @@ export async function getContracts(): Promise<ApiContract[]> {
 export async function createContract(
   contract: ApiContract,
 ): Promise<ApiContract> {
-  const response = await fetch(`${API_BASE_URL}/api/contracts`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await fetch(
+    `${API_BASE_URL}/api/contracts`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthorizationHeaders(),
+      },
+      body: JSON.stringify(contract),
     },
-    body: JSON.stringify(contract),
-  })
+  )
 
   if (!response.ok) {
     throw new Error(
@@ -62,6 +84,7 @@ export async function updateContract(
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthorizationHeaders(),
       },
       body: JSON.stringify(contract),
     },
@@ -83,6 +106,9 @@ export async function deleteContract(
     `${API_BASE_URL}/api/contracts/${id}`,
     {
       method: 'DELETE',
+      headers: {
+        ...getAuthorizationHeaders(),
+      },
     },
   )
 
@@ -100,6 +126,11 @@ export async function getContractByNumber(
     `${API_BASE_URL}/api/contracts/number/${encodeURIComponent(
       contractNumber,
     )}`,
+    {
+      headers: {
+        ...getAuthorizationHeaders(),
+      },
+    },
   )
 
   if (response.status === 404) {
