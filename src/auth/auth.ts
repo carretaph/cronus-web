@@ -4,8 +4,12 @@ const AUTH_STORAGE_KEY =
 const USER_STORAGE_KEY =
   'cronus_portal_user'
 
+const TOKEN_STORAGE_KEY =
+  'cronus_portal_token'
+
 const API_BASE_URL =
   import.meta.env.VITE_CRONUS_API_URL ??
+  import.meta.env.VITE_API_BASE_URL ??
   'https://cronus-backend.onrender.com'
 
 export type CronusUserRole =
@@ -42,6 +46,11 @@ export type CronusUser = {
   updatedAt?: string
 }
 
+type AuthLoginResponse = {
+  token: string
+  user: CronusUser
+}
+
 type LoginResult = {
   success: boolean
   message?: string
@@ -54,7 +63,7 @@ export async function loginUser(
 ): Promise<LoginResult> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/users/login`,
+      `${API_BASE_URL}/api/auth/login`,
       {
         method: 'POST',
         headers: {
@@ -89,14 +98,25 @@ export async function loginUser(
       }
     }
 
-    const user =
-      (await response.json()) as CronusUser
+    const result =
+      (await response.json()) as AuthLoginResponse
+
+    const user = result.user
+    const token = result.token
 
     if (!user.active) {
       return {
         success: false,
         message:
           'This account is inactive.',
+      }
+    }
+
+    if (!token) {
+      return {
+        success: false,
+        message:
+          'Unable to create a secure session.',
       }
     }
 
@@ -108,6 +128,11 @@ export async function loginUser(
     localStorage.setItem(
       USER_STORAGE_KEY,
       JSON.stringify(user),
+    )
+
+    localStorage.setItem(
+      TOKEN_STORAGE_KEY,
+      token,
     )
 
     return {
@@ -136,6 +161,32 @@ export function logoutUser() {
   localStorage.removeItem(
     USER_STORAGE_KEY,
   )
+
+  localStorage.removeItem(
+    TOKEN_STORAGE_KEY,
+  )
+}
+
+export function getAuthToken() {
+  return (
+    localStorage.getItem(
+      TOKEN_STORAGE_KEY,
+    ) ?? ''
+  )
+}
+
+export function getAuthorizationHeaders():
+  Record<string, string> {
+  const token = getAuthToken()
+
+  if (!token) {
+    return {}
+  }
+
+  return {
+    Authorization:
+      `Bearer ${token}`,
+  }
 }
 
 export function isAuthenticated() {
@@ -143,7 +194,8 @@ export function isAuthenticated() {
     localStorage.getItem(
       AUTH_STORAGE_KEY,
     ) === 'true' &&
-    getAuthenticatedUser() !== null
+    getAuthenticatedUser() !== null &&
+    Boolean(getAuthToken())
   )
 }
 
