@@ -555,21 +555,9 @@ export default function Contracts() {
   }, [apiContracts])
 
   function loadContracts() {
-    const legacyContracts =
-      readArrayFromStorage(
-        legacyContractsStorageKey,
-      )
-
-    const completedContracts =
-      readArrayFromStorage(
-        completedContractsStorageKey,
-      )
-
     const mergedContracts =
       uniqueContracts([
         ...apiContracts,
-        ...completedContracts,
-        ...legacyContracts,
       ])
 
     setContracts(mergedContracts)
