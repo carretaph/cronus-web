@@ -130,6 +130,15 @@ export default function PortalLayout() {
               />
             )}
 
+            {user?.canViewContracts && (
+              <PortalNavLink
+                to="/portal/sales-report"
+                label="Sales Report"
+                icon={<ContractIcon />}
+                onClick={closeMobileMenu}
+              />
+            )}
+
             {user?.canViewPricing && (
               <PortalNavLink
                 to="/portal/pricing"

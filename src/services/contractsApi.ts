@@ -14,6 +14,13 @@ export type ApiContract = {
   customerName: string
   customerEmail: string
   projectTotal: number
+
+  retailPrice?: number | null
+  discountTotal?: number | null
+  discountPercent?: number | null
+  commissionRate?: number | null
+  commissionAmount?: number | null
+
   status: string
   workflowStatus: string
   contractJson: string

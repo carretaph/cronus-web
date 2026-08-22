@@ -17,6 +17,8 @@ import Quotes from './pages/Quotes'
 import NewQuote from './pages/NewQuote'
 import OpeningManager from './pages/OpeningManager'
 import Contracts from './pages/Contracts'
+
+import SalesReport from './pages/SalesReport'
 import PricingEngine from './pages/PricingEngine'
 import Users from './pages/Users'
 
@@ -139,6 +141,16 @@ export default function App() {
           element={
             <ProtectedRoute requiredPermission="canViewContracts">
               <Contracts />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Sales Report */}
+        <Route
+          path="sales-report"
+          element={
+            <ProtectedRoute requiredPermission="canViewContracts">
+              <SalesReport />
             </ProtectedRoute>
           }
         />
