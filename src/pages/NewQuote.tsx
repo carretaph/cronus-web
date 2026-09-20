@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { pdf } from '@react-pdf/renderer'
 
 import EstimatePDF from '../components/pdf/EstimatePDF'
@@ -557,6 +557,10 @@ function saveCompleteQuoteDraft(
 
 export default function NewQuote() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const requestedCustomerId =
+    searchParams.get('customerId')
+
   const [customers, setCustomers] =
     useState<ApiCustomer[]>([])
   const initialDraft = useMemo(loadQuoteDraft, [])
@@ -1037,6 +1041,28 @@ export default function NewQuote() {
       setDownPayment(0)
     }
   }
+
+  useEffect(() => {
+    if (!requestedCustomerId || customers.length === 0) {
+      return
+    }
+
+    const requestedCustomer = customers.find(
+      (customer) => customer.id === requestedCustomerId,
+    )
+
+    if (!requestedCustomer) {
+      return
+    }
+
+    if (selectedCustomerId !== requestedCustomerId) {
+      handleSelectCustomer(requestedCustomerId)
+    }
+  }, [
+    customers,
+    requestedCustomerId,
+    selectedCustomerId,
+  ])
 
   function ensureEstimateNumber() {
     if (estimateNumber) {

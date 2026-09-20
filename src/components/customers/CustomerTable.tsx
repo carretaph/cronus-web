@@ -188,7 +188,9 @@ function CustomerRow({
           </button>
 
           <Link
-            to="/portal/quotes/new"
+            to={`/portal/quotes/new?customerId=${encodeURIComponent(
+              customer.id,
+            )}`}
             className="inline-flex items-center justify-center rounded-lg bg-[#222222] px-3.5 py-2 text-xs font-medium text-white transition hover:bg-[#B59A68]"
           >
             New quote
