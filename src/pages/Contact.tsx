@@ -69,7 +69,7 @@ export default function Contact() {
           <div>
             <img
               src={contactImage}
-              alt="Cronus Customer Service"
+              alt="Story Windows & Doors Customer Service"
               className="rounded-3xl shadow-2xl"
             />
           </div>

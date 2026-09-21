@@ -48,7 +48,7 @@ export default function PortalLayout() {
 
             <div>
               <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[#B59A68]">
-                Cronus Windows & Doors
+                Story Windows & Doors
               </p>
 
               <h1 className="mt-1 text-lg font-medium text-[#333333]">
@@ -160,7 +160,7 @@ export default function PortalLayout() {
 
           <div className="absolute bottom-6 left-5 right-5 rounded-2xl bg-[#222222] p-5 text-white">
             <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#B59A68]">
-              Cronus Portal
+              Story Portal
             </p>
 
             <p className="mt-3 text-sm leading-6 text-white/60">

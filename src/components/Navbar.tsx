@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import cronusLogo from '../assets/cronus-logo.png'
+import storyLogo from '../assets/story-windows-doors-logo.png'
 
 const navItems = [
   { label: 'Home', to: '/' },
@@ -15,16 +15,16 @@ const navItems = [
 function Navbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-[#F2F2F2] bg-white">
-      <div className="mx-auto flex h-50 max-w-[1550px] items-center justify-between px-10 lg:px-16">
+      <div className="mx-auto flex h-32 max-w-[1550px] items-center justify-between px-10 lg:px-16">
         <NavLink
           to="/"
-          aria-label="Cronus Home"
+          aria-label="Story Windows & Doors Home"
           className="shrink-0"
         >
           <img
-            src={cronusLogo}
-            alt="Cronus Windows and Doors"
-            className="h-45 w-auto object-contain"
+            src={storyLogo}
+            alt="Story Windows & Doors"
+            className="h-26 w-auto object-contain"
           />
         </NavLink>
 

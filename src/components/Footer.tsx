@@ -1,4 +1,4 @@
-import logo from '../assets/cronus-logo.png'
+import logo from '../assets/story-windows-doors-logo.png'
 
 function Footer() {
   return (
@@ -8,7 +8,7 @@ function Footer() {
           <div>
             <img
               src={logo}
-              alt="Cronus Windows and Doors"
+              alt="Story Windows & Doors"
               className="h-20 w-auto object-contain"
             />
 
@@ -90,7 +90,7 @@ function Footer() {
         </div>
 
         <div className="flex flex-col gap-4 pt-8 text-[13px] font-light text-[#A0A0A0] sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 Cronus Windows & Doors LLC. All rights reserved.</p>
+          <p>© 2026 Story Windows & Doors. All rights reserved.</p>
 
           <p>Luxury service. Lasting quality.</p>
         </div>
