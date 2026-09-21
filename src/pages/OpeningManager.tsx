@@ -3,6 +3,31 @@ import type { ChangeEvent, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import doubleHungImage from '../assets/windows/double-hung.png'
+import doubleHungHouseImage from '../assets/windows/double-hung-house.png'
+import specialtyHouseImage from '../assets/windows/specialty-house.png'
+import equalLegArchImage from '../assets/windows/specialty/equal-leg-arch.png'
+import springlineImage from '../assets/windows/specialty/springline.png'
+import unequalLegArchLeftImage from '../assets/windows/specialty/unequal-leg-arch-left.png'
+import unequalLegArchRightImage from '../assets/windows/specialty/unequal-leg-arch-right.png'
+
+import trapezoidImage from '../assets/windows/specialty/trapezoid.png'
+import rightTriangleLeftImage from '../assets/windows/specialty/right-triangle-left.png'
+import rightTriangleRightImage from '../assets/windows/specialty/right-triangle-right.png'
+import triangleImage from '../assets/windows/specialty/triangle.png'
+
+import octagonImage from '../assets/windows/specialty/octagon.png'
+import hexagonImage from '../assets/windows/specialty/hexagon.png'
+
+import circleImage from '../assets/windows/specialty/circle.png'
+
+import peakPentagonImage from '../assets/windows/specialty/peak-pentagon.png'
+import pentagonImage from '../assets/windows/specialty/pentagon.png'
+
+import circleTopImage from '../assets/windows/specialty/circle-top.png'
+import chordImage from '../assets/windows/specialty/chord.png'
+import quarterCircleLeftImage from '../assets/windows/specialty/quarter-circle-left.png'
+import quarterCircleRightImage from '../assets/windows/specialty/quarter-circle-right.png'
+import awningHouseImage from '../assets/windows/awning-house.png'
 import casementImage from '../assets/windows/casement.png'
 import slidingImage from '../assets/windows/sliding.png'
 import pictureImage from '../assets/windows/picture.png'
@@ -401,6 +426,8 @@ export default function OpeningManager({
     useState<string | null>(null)
 
   const [showPricing, setShowPricing] = useState(false)
+  const [isProductSelectorOpen, setIsProductSelectorOpen] =
+    useState(false)
 
   const [saveStatus, setSaveStatus] = useState<
     'saved' | 'saving'
@@ -445,7 +472,13 @@ export default function OpeningManager({
   useEffect(() => {
     if (!embedded) return
 
-    setOpenings(initialOpenings ?? [])
+    setOpenings((currentOpenings) => {
+      if (currentOpenings.length > 0) {
+        return currentOpenings
+      }
+
+      return initialOpenings ?? []
+    })
   }, [embedded, initialOpenings])
 
   useEffect(() => {
@@ -566,6 +599,7 @@ export default function OpeningManager({
   function createEmptyProduct(
     label: string,
     position: string,
+    productCategory: ProductCategory = 'Single Hung',
   ): OpeningProduct {
     return {
       id: crypto.randomUUID(),
@@ -574,7 +608,7 @@ export default function OpeningManager({
       supplier: 'GL',
       manufacturer: 'Ply Gem',
       material: 'Vinyl',
-      productCategory: 'Single Hung',
+      productCategory,
       configuration: 'Standard',
       series: '',
       model: '',
@@ -603,12 +637,14 @@ export default function OpeningManager({
     openingNumber: string,
     unitCount: number,
     isMulled: boolean,
+    productCategory: ProductCategory = 'Single Hung',
   ): OpeningProduct[] {
     if (!isMulled) {
       return [
         createEmptyProduct(
           openingNumber,
           'Single unit',
+          productCategory,
         ),
       ]
     }
@@ -621,12 +657,17 @@ export default function OpeningManager({
         return createEmptyProduct(
           `${openingNumber}${letter}`,
           getExteriorPosition(index, unitCount),
+          productCategory,
         )
       },
     )
   }
 
-  function handleCreateOpening() {
+  function handleCreateOpening(
+    productCategory: ProductCategory = 'Single Hung',
+    impact = form.impact,
+    configuration = 'Standard',
+  ) {
     if (!form.location.trim()) {
       return
     }
@@ -649,17 +690,21 @@ export default function OpeningManager({
       locationDetail: form.locationDetail.trim(),
       isMulled: form.isMulled,
       unitCount,
-      impact: form.impact,
+      impact,
       mullionCharge: calculateMullionCharge(
         form.isMulled,
         unitCount,
-        form.impact,
+        impact,
       ),
       products: createProducts(
         openingNumber,
         unitCount,
         form.isMulled,
-      ),
+        productCategory,
+      ).map((product) => ({
+        ...product,
+        configuration,
+      })),
       interiorPhotos: [],
       exteriorPhotos: [],
     }
@@ -670,6 +715,7 @@ export default function OpeningManager({
     ])
 
     setSelectedOpeningId(newOpening.id)
+    setIsProductSelectorOpen(false)
 
     setForm((currentForm) => ({
       ...currentForm,
@@ -1253,7 +1299,7 @@ export default function OpeningManager({
             <button
               type="button"
               disabled={!canCreateOpening}
-              onClick={handleCreateOpening}
+              onClick={() => setIsProductSelectorOpen(true)}
               className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#222222] px-6 text-sm font-medium uppercase tracking-[0.14em] text-white transition hover:bg-[#B59A68] disabled:bg-[#D8D5CE] disabled:text-[#A8A39A]"
             >
               Add opening
@@ -1693,6 +1739,28 @@ export default function OpeningManager({
           </section>
         </div>
       </div>
+
+      {isProductSelectorOpen && (
+        <VisualProductSelector
+          impact={form.impact}
+          onImpactChange={(impact) =>
+            setForm((currentForm) => ({
+              ...currentForm,
+              impact,
+            }))
+          }
+          onSelect={(productCategory, impact, configuration) =>
+            handleCreateOpening(
+              productCategory,
+              impact,
+              configuration,
+            )
+          }
+          onClose={() =>
+            setIsProductSelectorOpen(false)
+          }
+        />
+      )}
     </section>
   )
 }
@@ -1950,10 +2018,21 @@ function ProductEditor({
     ),
   ).sort()
 
-  const configurationOptions =
-    productConfigurationOptions[
-    product.productCategory
-    ] ?? ['Standard']
+  const configurationOptions = Array.from(
+    new Set([
+      product.configuration,
+      ...(productConfigurationOptions[
+        product.productCategory
+      ] ?? ['Standard']),
+    ].filter(Boolean)),
+  )
+
+  const productTypeOptions = Array.from(
+    new Set([
+      product.productCategory,
+      ...productOptions,
+    ].filter(Boolean)),
+  )
 
   return (
     <div className="rounded-2xl border border-[#E4E0D7] bg-white p-5">
@@ -2148,7 +2227,7 @@ function ProductEditor({
           <SelectField
             label="Product type"
             value={product.productCategory}
-            options={productOptions}
+            options={productTypeOptions}
             onChange={(value) =>
               onChange(
                 openingId,
@@ -2790,3 +2869,638 @@ function PhotoUploader({
     </div>
   )
 }
+
+type ProductGroup =
+  | 'Windows'
+  | 'Specialty'
+  | 'Patio Doors'
+  | 'Entry Doors'
+
+
+type SpecialtyVariant = {
+  title: string
+  subtitle: string
+  image: string
+}
+
+type SpecialtyFamily = {
+  title: string
+  subtitle: string
+  variants: SpecialtyVariant[]
+}
+
+const specialtyFamilies: SpecialtyFamily[] = [
+  {
+    title: 'Radius Top',
+    subtitle: 'Arched architectural windows',
+    variants: [
+      {
+        title: 'Equal Leg Arch',
+        subtitle: 'Symmetrical radius top',
+        image: equalLegArchImage,
+      },
+      {
+        title: 'Springline',
+        subtitle: 'Classic springline arch',
+        image: springlineImage,
+      },
+      {
+        title: 'Unequal Leg Arch - Left',
+        subtitle: 'Exterior view · Left',
+        image: unequalLegArchLeftImage,
+      },
+      {
+        title: 'Unequal Leg Arch - Right',
+        subtitle: 'Exterior view · Right',
+        image: unequalLegArchRightImage,
+      },
+    ],
+  },
+  {
+    title: 'Triangle',
+    subtitle: 'Angular architectural windows',
+    variants: [
+      {
+        title: 'Trapezoid',
+        subtitle: 'Sloped geometric window',
+        image: trapezoidImage,
+      },
+      {
+        title: 'Right Triangle - Left',
+        subtitle: 'Exterior view · Left',
+        image: rightTriangleLeftImage,
+      },
+      {
+        title: 'Right Triangle - Right',
+        subtitle: 'Exterior view · Right',
+        image: rightTriangleRightImage,
+      },
+      {
+        title: 'Triangle',
+        subtitle: 'Symmetrical triangle',
+        image: triangleImage,
+      },
+    ],
+  },
+  {
+    title: 'Polygon',
+    subtitle: 'Multi-sided geometric windows',
+    variants: [
+      {
+        title: 'Octagon',
+        subtitle: 'Eight-sided window',
+        image: octagonImage,
+      },
+      {
+        title: 'Hexagon',
+        subtitle: 'Six-sided window',
+        image: hexagonImage,
+      },
+    ],
+  },
+  {
+    title: 'Circle',
+    subtitle: 'Round architectural windows',
+    variants: [
+      {
+        title: 'Circle',
+        subtitle: 'Full round window',
+        image: circleImage,
+      },
+    ],
+  },
+  {
+    title: 'Pentagon',
+    subtitle: 'Five-sided architectural windows',
+    variants: [
+      {
+        title: 'Peak Pentagon',
+        subtitle: 'Tall peaked pentagon',
+        image: peakPentagonImage,
+      },
+      {
+        title: 'Pentagon',
+        subtitle: 'Classic pentagon',
+        image: pentagonImage,
+      },
+    ],
+  },
+  {
+    title: 'Part-Circle',
+    subtitle: 'Partial-radius architectural windows',
+    variants: [
+      {
+        title: 'Circle Top',
+        subtitle: 'Half-round window',
+        image: circleTopImage,
+      },
+      {
+        title: 'Chord',
+        subtitle: 'Segmented radius window',
+        image: chordImage,
+      },
+      {
+        title: 'Quarter Circle - Left',
+        subtitle: 'Exterior view · Left',
+        image: quarterCircleLeftImage,
+      },
+      {
+        title: 'Quarter Circle - Right',
+        subtitle: 'Exterior view · Right',
+        image: quarterCircleRightImage,
+      },
+    ],
+  },
+]
+
+type SpecialtySelectorProps = {
+  impact: boolean
+  onSelect: (
+    category: ProductCategory,
+    impact: boolean,
+    configuration?: string,
+  ) => void
+}
+
+function SpecialtySelector({
+  impact,
+  onSelect,
+}: SpecialtySelectorProps) {
+  const [variantIndexes, setVariantIndexes] =
+    useState<number[]>(
+      () => specialtyFamilies.map(() => 0),
+    )
+
+  function moveVariant(
+    familyIndex: number,
+    direction: number,
+  ) {
+    setVariantIndexes((current) => {
+      const next = [...current]
+      const count =
+        specialtyFamilies[familyIndex].variants.length
+
+      next[familyIndex] =
+        (next[familyIndex] + direction + count) % count
+
+      return next
+    })
+  }
+
+  return (
+    <div className="overflow-y-auto px-7 py-8 sm:px-10">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B59A68]">
+            Specialty shapes
+          </p>
+          <p className="mt-1 text-sm text-[#888888]">
+            Scroll left or right between families. Use ↑ ↓ to explore each shape.
+          </p>
+        </div>
+
+        <div className="hidden text-xs font-semibold uppercase tracking-[0.14em] text-[#999999] md:block">
+          ← Scroll to explore →
+        </div>
+      </div>
+
+      <div className="flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6">
+        {specialtyFamilies.map((family, familyIndex) => {
+          const variantIndex =
+            variantIndexes[familyIndex] ?? 0
+
+          const variant =
+            family.variants[variantIndex]
+
+          return (
+            <div
+              key={family.title}
+              className="group relative flex min-h-[560px] w-[300px] flex-none snap-start flex-col overflow-hidden rounded-[24px] border border-[#DEDAD1] bg-white text-left shadow-sm transition duration-300 hover:-translate-y-1 hover:border-[#B59A68] hover:shadow-xl sm:w-[340px]"
+            >
+              <div className="relative h-[380px] overflow-hidden bg-[#F1EFEA]">
+                <img
+                  src={variant.image}
+                  alt={variant.title}
+                  className="h-full w-full object-cover object-center transition duration-500"
+                />
+
+                <span
+                  className={`absolute left-5 top-5 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] ${
+                    impact
+                      ? 'bg-[#B59A68] text-white'
+                      : 'bg-[#222222] text-white'
+                  }`}
+                >
+                  {impact ? 'Impact' : 'Non-Impact'}
+                </span>
+
+                {family.variants.length > 1 && (
+                  <div className="absolute right-4 top-1/2 flex -translate-y-1/2 flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        moveVariant(familyIndex, -1)
+                      }}
+                      className="flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/90 text-xl text-[#444444] shadow-md backdrop-blur transition hover:bg-white hover:text-[#B59A68]"
+                      aria-label={`Previous ${family.title} shape`}
+                    >
+                      ↑
+                    </button>
+
+                    <div className="rounded-full bg-black/65 px-2.5 py-1 text-center text-[10px] font-semibold text-white backdrop-blur">
+                      {variantIndex + 1}/{family.variants.length}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        moveVariant(familyIndex, 1)
+                      }}
+                      className="flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/90 text-xl text-[#444444] shadow-md backdrop-blur transition hover:bg-white hover:text-[#B59A68]"
+                      aria-label={`Next ${family.title} shape`}
+                    >
+                      ↓
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-1 flex-col p-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B59A68]">
+                  {family.title}
+                </p>
+
+                <h3 className="mt-2 text-2xl font-light text-[#333333]">
+                  {variant.title}
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-[#888888]">
+                  {variant.subtitle}
+                </p>
+
+                {family.variants.length > 1 && (
+                  <div className="mt-4 flex gap-1.5">
+                    {family.variants.map((_, index) => (
+                      <span
+                        key={index}
+                        className={`h-1.5 rounded-full transition-all ${
+                          index === variantIndex
+                            ? 'w-6 bg-[#B59A68]'
+                            : 'w-1.5 bg-[#DDD8CE]'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                      onSelect(
+                        'Shape',
+                        impact,
+                        variant.title,
+                      )
+                    }
+                  className="mt-auto pt-5 text-left"
+                >
+                  <span className="inline-flex items-center text-xs font-semibold uppercase tracking-[0.14em] text-[#555555] transition hover:text-[#B59A68]">
+                    Select {variant.title} →
+                  </span>
+                </button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <p className="mt-1 text-center text-xs font-semibold uppercase tracking-[0.18em] text-[#AAA49A]">
+        ← Scroll to explore all specialty shapes →
+      </p>
+    </div>
+  )
+}
+
+type VisualProductSelectorProps = {
+  impact: boolean
+  onImpactChange: (impact: boolean) => void
+  onSelect: (
+    category: ProductCategory,
+    impact: boolean,
+    configuration?: string,
+  ) => void
+  onClose: () => void
+}
+
+function VisualProductSelector({
+  impact,
+  onImpactChange,
+  onSelect,
+  onClose,
+}: VisualProductSelectorProps) {
+  const [selectedGroup, setSelectedGroup] =
+    useState<ProductGroup | null>(null)
+
+  const visualProducts: {
+    category: ProductCategory
+    group: ProductGroup
+    title: string
+    subtitle: string
+    image: string
+  }[] = [
+    {
+      category: 'Double Hung',
+      group: 'Windows',
+      title: 'Double Hung',
+      subtitle: 'Both upper & lower sash operable',
+      image: doubleHungHouseImage,
+    },
+    {
+      category: 'Single Hung',
+      group: 'Windows',
+      title: 'Single Hung',
+      subtitle: 'Fixed upper sash · operable lower sash',
+      image: doubleHungHouseImage,
+    },
+    {
+      category: 'Sliding Window',
+      group: 'Windows',
+      title: 'Slider / Glider',
+      subtitle: 'Horizontal operation',
+      image: slidingImage,
+    },
+    {
+      category: 'Casement',
+      group: 'Windows',
+      title: 'Casement',
+      subtitle: 'Crank-out operation',
+      image: casementImage,
+    },
+    {
+      category: 'Awning',
+      group: 'Windows',
+      title: 'Awning',
+      subtitle: 'Top-hinged operation',
+      image: awningHouseImage,
+    },
+    {
+      category: 'Picture Window',
+      group: 'Windows',
+      title: 'Picture',
+      subtitle: 'Fixed glass',
+      image: pictureImage,
+    },
+    {
+      category: 'Shape',
+      group: 'Specialty',
+      title: 'Geometric / Shape',
+      subtitle: 'Custom architectural shapes',
+      image: pictureImage,
+    },
+    {
+      category: 'Transom',
+      group: 'Specialty',
+      title: 'Transom',
+      subtitle: 'Fixed transom window',
+      image: pictureImage,
+    },
+    {
+      category: 'Sliding Glass Door',
+      group: 'Patio Doors',
+      title: 'Sliding Glass Door',
+      subtitle: 'Sliding patio door system',
+      image: slidingGlassDoorImage,
+    },
+    {
+      category: 'French Door',
+      group: 'Patio Doors',
+      title: 'French Door',
+      subtitle: 'Hinged patio door system',
+      image: frenchDoorImage,
+    },
+    {
+      category: 'Entry Door',
+      group: 'Entry Doors',
+      title: 'Entry Door',
+      subtitle: 'Exterior entry system',
+      image: entryDoorImage,
+    },
+  ]
+
+  const categoryCards: {
+    group: ProductGroup
+    title: string
+    subtitle: string
+    image: string
+  }[] = [
+    {
+      group: 'Windows',
+      title: 'Windows',
+      subtitle: 'Hung, sliding, casement, awning & picture',
+      image: doubleHungHouseImage,
+    },
+    {
+      group: 'Specialty',
+      title: 'Specialty',
+      subtitle: 'Shapes, geometric & transom windows',
+      image: specialtyHouseImage,
+    },
+    {
+      group: 'Patio Doors',
+      title: 'Patio Doors',
+      subtitle: 'Sliding glass & French doors',
+      image: slidingGlassDoorImage,
+    },
+    {
+      group: 'Entry Doors',
+      title: 'Entry Doors',
+      subtitle: 'Exterior entry door systems',
+      image: entryDoorImage,
+    },
+  ]
+
+  const filteredProducts = visualProducts.filter(
+    (product) => product.group === selectedGroup,
+  )
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[94vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-[28px] bg-[#F7F5F0] shadow-2xl">
+        <div className="flex items-start justify-between border-b border-[#DDD8CE] bg-white px-7 py-6 sm:px-10">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#B59A68]">
+              Add opening
+            </p>
+
+            <h2 className="mt-2 text-3xl font-light text-[#333333]">
+              {selectedGroup
+                ? `Select ${selectedGroup}`
+                : 'Select category'}
+            </h2>
+
+            <p className="mt-2 text-sm text-[#888888]">
+              {selectedGroup
+                ? 'Choose the product type for this opening.'
+                : 'Choose a product category to continue.'}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-[#DDD8CE] bg-white text-2xl font-light text-[#777777] transition hover:border-[#B59A68] hover:text-[#B59A68]"
+            aria-label="Close product selector"
+          >
+            ×
+          </button>
+        </div>
+
+        {!selectedGroup ? (
+          <div className="overflow-y-auto px-7 py-8 sm:px-10">
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+              {categoryCards.map((category) => (
+                <button
+                  key={category.group}
+                  type="button"
+                  onClick={() =>
+                    setSelectedGroup(category.group)
+                  }
+                  className="group flex min-h-[560px] flex-col overflow-hidden rounded-[24px] border border-[#DEDAD1] bg-white text-left shadow-sm transition duration-300 hover:-translate-y-1 hover:border-[#B59A68] hover:shadow-xl"
+                >
+                  <div className="flex h-[400px] items-center justify-center overflow-hidden bg-[#F1EFEA]">
+                    <img
+                      src={category.image}
+                      alt={category.title}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+                    />
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-6">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B59A68]">
+                      Category
+                    </p>
+
+                    <h3 className="mt-2 text-2xl font-light text-[#333333]">
+                      {category.title}
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-[#888888]">
+                      {category.subtitle}
+                    </p>
+
+                    <div className="mt-auto pt-5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[#555555] transition group-hover:text-[#B59A68]">
+                        View products →
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#DDD8CE] bg-[#EEEAE2] px-7 py-4 sm:px-10">
+              <button
+                type="button"
+                onClick={() => setSelectedGroup(null)}
+                className="text-xs font-semibold uppercase tracking-[0.14em] text-[#666666] transition hover:text-[#B59A68]"
+              >
+                ← Back to categories
+              </button>
+
+              <div className="flex items-center rounded-full bg-white p-1 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => onImpactChange(false)}
+                  className={`rounded-full px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+                    !impact
+                      ? 'bg-[#222222] text-white'
+                      : 'text-[#888888] hover:text-[#333333]'
+                  }`}
+                >
+                  Non-Impact
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onImpactChange(true)}
+                  className={`rounded-full px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+                    impact
+                      ? 'bg-[#B59A68] text-white'
+                      : 'text-[#888888] hover:text-[#333333]'
+                  }`}
+                >
+                  Impact
+                </button>
+              </div>
+            </div>
+
+            {selectedGroup === 'Specialty' ? (
+              <SpecialtySelector
+                impact={impact}
+                onSelect={onSelect}
+              />
+            ) : (
+            <div className="overflow-y-auto px-7 py-8 sm:px-10">
+              <div className="flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6">
+                {filteredProducts.map((product) => (
+                  <button
+                    key={product.category}
+                    type="button"
+                    onClick={() =>
+                      onSelect(product.category, impact)
+                    }
+                    className="group relative flex min-h-[520px] w-[300px] flex-none snap-start flex-col overflow-hidden rounded-[24px] border border-[#DEDAD1] bg-white text-left shadow-sm transition duration-300 hover:-translate-y-1 hover:border-[#B59A68] hover:shadow-xl sm:w-[340px]"
+                  >
+                    <div className="relative flex h-[360px] items-center justify-center overflow-hidden bg-[#F1EFEA] p-7">
+                      <img
+                        src={product.image}
+                        alt={product.title}
+                        className="max-h-full max-w-full object-contain transition duration-500 group-hover:scale-[1.04]"
+                      />
+
+                      <span
+                        className={`absolute left-5 top-5 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] ${
+                          impact
+                            ? 'bg-[#B59A68] text-white'
+                            : 'bg-[#222222] text-white'
+                        }`}
+                      >
+                        {impact ? 'Impact' : 'Non-Impact'}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-1 flex-col p-6">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#B59A68]">
+                        Product
+                      </p>
+
+                      <h3 className="mt-2 text-2xl font-light text-[#333333]">
+                        {product.title}
+                      </h3>
+
+                      <p className="mt-2 text-sm leading-6 text-[#888888]">
+                        {product.subtitle}
+                      </p>
+
+                      <div className="mt-auto pt-5">
+                        <span className="inline-flex items-center text-xs font-semibold uppercase tracking-[0.14em] text-[#555555] transition group-hover:text-[#B59A68]">
+                          Select product →
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
