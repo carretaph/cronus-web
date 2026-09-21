@@ -205,7 +205,38 @@ const productImages: Record<ProductCategory, string> = {
   'French Door': frenchDoorImage,
   'Entry Door': entryDoorImage,
   Transom: pictureImage,
-  Shape: pictureImage,
+  Shape: specialtyHouseImage,
+}
+
+const specialtyProductImages: Record<string, string> = {
+  'Equal Leg Arch': equalLegArchImage,
+  'Springline': springlineImage,
+  'Unequal Leg Arch - Left': unequalLegArchLeftImage,
+  'Unequal Leg Arch - Right': unequalLegArchRightImage,
+  'Trapezoid': trapezoidImage,
+  'Right Triangle - Left': rightTriangleLeftImage,
+  'Right Triangle - Right': rightTriangleRightImage,
+  'Triangle': triangleImage,
+  'Octagon': octagonImage,
+  'Hexagon': hexagonImage,
+  'Circle': circleImage,
+  'Peak Pentagon': peakPentagonImage,
+  'Pentagon': pentagonImage,
+  'Circle Top': circleTopImage,
+  'Chord': chordImage,
+  'Quarter Circle - Left': quarterCircleLeftImage,
+  'Quarter Circle - Right': quarterCircleRightImage,
+}
+
+function getProductImage(product: OpeningProduct) {
+  if (product.productCategory === 'Shape') {
+    return (
+      specialtyProductImages[product.configuration] ??
+      specialtyHouseImage
+    )
+  }
+
+  return productImages[product.productCategory]
 }
 
 const locationOptions = [
@@ -996,7 +1027,7 @@ export default function OpeningManager({
       return pictureImage
     }
 
-    return productImages[firstProduct.productCategory]
+    return getProductImage(firstProduct)
   }
 
   function getOpeningSummary(opening: Opening) {
@@ -2040,7 +2071,7 @@ function ProductEditor({
         <div className="flex items-center gap-4">
           <div className="h-20 w-24 overflow-hidden rounded-xl border border-[#E4E0D7] bg-[#F7F7F5]">
             <img
-              src={productImages[product.productCategory]}
+              src={getProductImage(product)}
               alt={`${product.productCategory} preview`}
               className="h-full w-full object-cover"
             />
