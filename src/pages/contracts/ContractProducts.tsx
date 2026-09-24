@@ -31,6 +31,7 @@ type Opening = {
   openingNumber: string
   location?: string
   impact?: boolean
+  isActive?: boolean
   mullionCharge?: number
   notes?: string
   products: Product[]
@@ -166,7 +167,9 @@ export default function ContractProducts() {
       ? handoff.openings
       : []
 
-    return openings.flatMap((opening, openingIndex) => {
+    return openings
+      .filter((opening) => opening.isActive !== false)
+      .flatMap((opening, openingIndex) => {
       const products = Array.isArray(opening.products)
         ? opening.products
         : []

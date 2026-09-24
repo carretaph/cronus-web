@@ -137,6 +137,7 @@ export type Opening = {
   isMulled: boolean
   unitCount: number
   impact: boolean
+  isActive?: boolean
   mullionCharge: number
   products: OpeningProduct[]
   interiorPhotos: string[]
@@ -552,13 +553,17 @@ export default function OpeningManager({
     )
   }, [openings])
 
-  const totalProducts = openings.reduce(
+  const activeOpenings = openings.filter(
+    (opening) => opening.isActive !== false,
+  )
+
+  const totalProducts = activeOpenings.reduce(
     (total, opening) =>
       total + opening.products.length,
     0,
   )
 
-  const totalMullionCharges = openings.reduce(
+  const totalMullionCharges = activeOpenings.reduce(
     (total, opening) =>
       total + opening.mullionCharge,
     0,
@@ -567,12 +572,12 @@ export default function OpeningManager({
   const openingPrices = useMemo(
     () =>
       new Map(
-        openings.map((opening) => [
+        activeOpenings.map((opening) => [
           opening.id,
           calculateOpeningPrice(opening),
         ]),
       ),
-    [openings],
+    [activeOpenings],
   )
 
   const estimatedProjectTotal = Array.from(
@@ -722,6 +727,7 @@ export default function OpeningManager({
       isMulled: form.isMulled,
       unitCount,
       impact,
+      isActive: true,
       mullionCharge: calculateMullionCharge(
         form.isMulled,
         unitCount,
@@ -755,6 +761,19 @@ export default function OpeningManager({
       unitCount: 1,
       impact: false,
     }))
+  }
+
+  function handleToggleOpeningActive(openingId: string) {
+    setOpenings((currentOpenings) =>
+      currentOpenings.map((opening) =>
+        opening.id === openingId
+          ? {
+              ...opening,
+              isActive: opening.isActive === false,
+            }
+          : opening,
+      ),
+    )
   }
 
   function handleDeleteOpening(openingId: string) {
@@ -1395,14 +1414,19 @@ export default function OpeningManager({
                           const isSelected =
                             opening.id ===
                             selectedOpeningId
+                          const isActive =
+                            opening.isActive !== false
 
                           return (
                             <article
                               key={opening.id}
-                              className={`overflow-hidden rounded-2xl border transition ${isSelected
-                                ? 'border-[#B59A68] bg-[#FCF9F2]'
-                                : 'border-[#E8E5DE] bg-white'
-                                }`}
+                              className={`overflow-hidden rounded-2xl border transition ${
+                                !isActive
+                                  ? 'border-[#DDD9D0] bg-[#F5F4F1] opacity-60'
+                                  : isSelected
+                                    ? 'border-[#B59A68] bg-[#FCF9F2]'
+                                    : 'border-[#E8E5DE] bg-white'
+                              }`}
                             >
                               <div className="grid gap-4 p-5 lg:grid-cols-[auto_auto_1.35fr_1fr_auto] lg:items-center">
                                 <div className="h-16 w-20 overflow-hidden rounded-xl border border-[#E4E0D7] bg-[#F7F7F5]">
@@ -1413,9 +1437,40 @@ export default function OpeningManager({
                                   />
                                 </div>
 
-                                <span className="flex h-12 min-w-16 items-center justify-center rounded-xl bg-[#222222] px-3 text-base font-medium text-white">
-                                  {opening.openingNumber}
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleToggleOpeningActive(opening.id)
+                                  }
+                                  title={
+                                    isActive
+                                      ? 'Exclude opening from quote'
+                                      : 'Include opening in quote'
+                                  }
+                                  className="flex items-center gap-2"
+                                >
+                                  <span
+                                    className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+                                      isActive
+                                        ? 'border-[#55705B] bg-[#55705B]'
+                                        : 'border-[#AAA59C] bg-white'
+                                    }`}
+                                  >
+                                    {isActive && (
+                                      <span className="h-2 w-2 rounded-full bg-white" />
+                                    )}
+                                  </span>
+
+                                  <span
+                                    className={`flex h-12 min-w-16 items-center justify-center rounded-xl px-3 text-base font-medium ${
+                                      isActive
+                                        ? 'bg-[#222222] text-white'
+                                        : 'bg-[#D8D5CF] text-[#77716A]'
+                                    }`}
+                                  >
+                                    {opening.openingNumber}
+                                  </span>
+                                </button>
 
                                 <div>
                                   <p className="font-medium text-[#444444]">
@@ -1433,6 +1488,12 @@ export default function OpeningManager({
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2">
+                                  {!isActive && (
+                                    <span className="rounded-full bg-[#EEE9E2] px-3 py-1.5 text-xs font-medium text-[#7A746B]">
+                                      Excluded from quote
+                                    </span>
+                                  )}
+
                                   <span
                                     className={`rounded-full px-3 py-1.5 text-xs font-medium ${isOpeningComplete(opening)
                                       ? 'bg-[#EAF3EC] text-[#55705B]'

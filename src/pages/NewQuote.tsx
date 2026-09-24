@@ -281,8 +281,10 @@ function getPricedProducts(
   openings: Opening[],
   projectType: ProjectType,
 ): PricedProduct[] {
-  return openings.flatMap((opening) =>
-    opening.products.map((product) => ({
+  return openings
+    .filter((opening) => opening.isActive !== false)
+    .flatMap((opening) =>
+      opening.products.map((product) => ({
       id: product.id,
       openingNumber: opening.openingNumber,
       label: product.label,
@@ -345,7 +347,9 @@ function calculateRetailPrice(
   openings: Opening[],
   projectType: ProjectType,
 ) {
-  return openings.reduce((projectTotal, opening) => {
+  return openings
+    .filter((opening) => opening.isActive !== false)
+    .reduce((projectTotal, opening) => {
     const productsTotal = opening.products.reduce(
       (openingTotal, product) => {
         return (
