@@ -567,7 +567,33 @@ export default function NewQuote() {
 
   const [customers, setCustomers] =
     useState<ApiCustomer[]>([])
-  const initialDraft = useMemo(loadQuoteDraft, [])
+  const initialDraft = useMemo(() => {
+    const draft = loadQuoteDraft()
+
+    if (
+      requestedCustomerId &&
+      draft.selectedCustomerId !== requestedCustomerId
+    ) {
+      return {
+        ...draft,
+        estimateNumber: null,
+        selectedCustomerId: null,
+        projectForm: {
+          ...defaultProjectForm,
+          salesperson: draft.projectForm.salesperson,
+        },
+        openings: [],
+        discounts: defaultDiscounts.map((discount) => ({
+          ...discount,
+        })),
+        selectedFinancingId: 'cash' as FinancingOptionId,
+        downPayment: 0,
+        savedAt: '',
+      }
+    }
+
+    return draft
+  }, [requestedCustomerId])
 
   useEffect(() => {
     async function loadCustomers() {
@@ -830,24 +856,28 @@ export default function NewQuote() {
     ),
   )
 
-  const windowCount = openings.reduce(
-    (total, opening) =>
-      total +
-      opening.products.filter(
-        (product) =>
-          !doorCategories.has(product.productCategory),
-      ).length,
-    0,
-  )
+  const windowCount = openings
+    .filter((opening) => opening.isActive !== false)
+    .reduce(
+      (total, opening) =>
+        total +
+        opening.products.filter(
+          (product) =>
+            !doorCategories.has(product.productCategory),
+        ).length,
+      0,
+    )
 
-  const doorCount = openings.reduce(
-    (total, opening) =>
-      total +
-      opening.products.filter((product) =>
-        doorCategories.has(product.productCategory),
-      ).length,
-    0,
-  )
+  const doorCount = openings
+    .filter((opening) => opening.isActive !== false)
+    .reduce(
+      (total, opening) =>
+        total +
+        opening.products.filter((product) =>
+          doorCategories.has(product.productCategory),
+        ).length,
+      0,
+    )
 
   const totalProducts = windowCount + doorCount
 
@@ -1195,8 +1225,10 @@ export default function NewQuote() {
 
   const estimateProductRows = useMemo(
     () =>
-      openings.flatMap((opening) =>
-        opening.products.map((product) => ({
+      openings
+        .filter((opening) => opening.isActive !== false)
+        .flatMap((opening) =>
+          opening.products.map((product) => ({
           id: product.id,
           openingNumber: opening.openingNumber,
           location: opening.location,
@@ -1440,6 +1472,64 @@ export default function NewQuote() {
               </Link>
             </div>
 
+            {requestedCustomerId ? (
+              <div className="mt-7">
+                {selectedCustomer ? (
+                  <div className="rounded-2xl border border-[#B59A68] bg-[#F8F4EB] p-5">
+                    <div className="flex items-start justify-between gap-5">
+                      <div>
+                        <p className="text-base font-medium text-[#444444]">
+                          {selectedCustomer.firstName}{' '}
+                          {selectedCustomer.lastName}
+                        </p>
+
+                        <p className="mt-1 text-sm text-[#888888]">
+                          {selectedCustomer.email ||
+                            'No email provided'}
+                        </p>
+
+                        <p className="mt-1 text-sm text-[#999999]">
+                          {selectedCustomer.phone ||
+                            'No phone provided'}
+                        </p>
+
+                        {(selectedCustomer.city ||
+                          selectedCustomer.state) && (
+                          <p className="mt-2 text-xs uppercase tracking-[0.12em] text-[#A39783]">
+                            {[
+                              selectedCustomer.city,
+                              selectedCustomer.state,
+                            ]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </p>
+                        )}
+                      </div>
+
+                      <span className="mt-1 flex h-6 w-6 items-center justify-center rounded-full border border-[#B59A68] bg-[#B59A68]">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.4"
+                          className="h-3.5 w-3.5 text-white"
+                          aria-hidden="true"
+                        >
+                          <path d="m6 12 4 4 8-8" />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-[#D8D4CB] bg-[#FAF9F6] px-5 py-8 text-center">
+                    <p className="text-sm text-[#888888]">
+                      Loading customer...
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
             <div className="mt-7">
               <label
                 htmlFor="customer-search"
@@ -1551,6 +1641,8 @@ export default function NewQuote() {
                 })
               )}
             </div>
+              </>
+            )}
           </section>
 
           <section className="rounded-[24px] border border-[#E8E5DE] bg-white p-6 sm:p-8">
