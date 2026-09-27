@@ -1,5 +1,6 @@
 import {
   getAuthorizationHeaders,
+  handleUnauthorizedResponse,
 } from '../auth/auth'
 
 const API_BASE_URL =
@@ -36,6 +37,8 @@ export async function getCustomers():
   )
 
   if (!response.ok) {
+    handleUnauthorizedResponse(response)
+
     throw new Error(
       `Unable to load customers: ${response.status}`,
     )

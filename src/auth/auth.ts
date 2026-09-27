@@ -175,6 +175,22 @@ export function getAuthToken() {
   )
 }
 
+export function handleUnauthorizedResponse(
+  response: Response,
+) {
+  if (response.status !== 401) {
+    return false
+  }
+
+  logoutUser()
+
+  if (window.location.pathname !== '/login') {
+    window.location.replace('/login')
+  }
+
+  return true
+}
+
 export function getAuthorizationHeaders():
   Record<string, string> {
   const token = getAuthToken()
@@ -189,14 +205,59 @@ export function getAuthorizationHeaders():
   }
 }
 
+function isTokenExpired(token: string) {
+  try {
+    const parts = token.split('.')
+
+    if (parts.length !== 3) {
+      return false
+    }
+
+    const payloadPart = parts[1]
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+
+    const paddedPayload =
+      payloadPart +
+      '='.repeat(
+        (4 - (payloadPart.length % 4)) % 4,
+      )
+
+    const payload = JSON.parse(
+      atob(paddedPayload),
+    ) as {
+      exp?: number
+    }
+
+    if (!payload.exp) {
+      return false
+    }
+
+    return Date.now() >= payload.exp * 1000
+  } catch {
+    return false
+  }
+}
+
 export function isAuthenticated() {
-  return (
+  const token = getAuthToken()
+
+  if (
     localStorage.getItem(
       AUTH_STORAGE_KEY,
-    ) === 'true' &&
-    getAuthenticatedUser() !== null &&
-    Boolean(getAuthToken())
-  )
+    ) !== 'true' ||
+    getAuthenticatedUser() === null ||
+    !token
+  ) {
+    return false
+  }
+
+  if (isTokenExpired(token)) {
+    logoutUser()
+    return false
+  }
+
+  return true
 }
 
 export function getAuthenticatedUser():
