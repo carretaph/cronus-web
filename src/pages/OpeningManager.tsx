@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
-import doubleHungImage from '../assets/windows/double-hung.png'
 import doubleHungHouseImage from '../assets/windows/double-hung-house.png'
+import doubleHungMulled2Image from '../assets/windows/double-hung-2units.png'
+import doubleHungMulled3Image from '../assets/windows/double-hung-3units.png'
+import slidingMulled2Image from '../assets/windows/sliding-2units.png'
+import slidingMulled3Image from '../assets/windows/sliding-3units.png'
 import specialtyHouseImage from '../assets/windows/specialty-house.png'
 import equalLegArchImage from '../assets/windows/specialty/equal-leg-arch.png'
 import springlineImage from '../assets/windows/specialty/springline.png'
@@ -31,6 +34,9 @@ import awningHouseImage from '../assets/windows/awning-house.png'
 import casementImage from '../assets/windows/casement.png'
 import slidingImage from '../assets/windows/sliding.png'
 import pictureImage from '../assets/windows/picture.png'
+import casementPlygemImage from '../assets/windows/Plygem/casement.png'
+import awningPlygemImage from '../assets/windows/Plygem/awning.png'
+import picturePlygemImage from '../assets/windows/Plygem/picture.png'
 import slidingGlassDoorImage from '../assets/doors/sliding-glass-door.png'
 import frenchDoorImage from '../assets/doors/french-door.png'
 import entryDoorImage from '../assets/doors/entry-door.png'
@@ -196,12 +202,12 @@ const productConfigurationOptions: Partial<
 }
 
 const productImages: Record<ProductCategory, string> = {
-  'Single Hung': doubleHungImage,
-  'Double Hung': doubleHungImage,
+  'Single Hung': doubleHungHouseImage,
+  'Double Hung': doubleHungHouseImage,
   'Sliding Window': slidingImage,
-  'Picture Window': pictureImage,
-  Casement: casementImage,
-  Awning: casementImage,
+  'Picture Window': picturePlygemImage,
+  Casement: casementPlygemImage,
+  Awning: awningPlygemImage,
   'Sliding Glass Door': slidingGlassDoorImage,
   'French Door': frenchDoorImage,
   'Entry Door': entryDoorImage,
@@ -228,6 +234,7 @@ const specialtyProductImages: Record<string, string> = {
   'Quarter Circle - Left': quarterCircleLeftImage,
   'Quarter Circle - Right': quarterCircleRightImage,
 }
+
 
 function getProductImage(product: OpeningProduct) {
   if (product.productCategory === 'Shape') {
@@ -504,13 +511,7 @@ export default function OpeningManager({
   useEffect(() => {
     if (!embedded) return
 
-    setOpenings((currentOpenings) => {
-      if (currentOpenings.length > 0) {
-        return currentOpenings
-      }
-
-      return initialOpenings ?? []
-    })
+    setOpenings(initialOpenings ?? [])
   }, [embedded, initialOpenings])
 
   useEffect(() => {
@@ -818,7 +819,7 @@ export default function OpeningManager({
         if (!nextIsMulled) {
           nextUnitCount = 1
         } else {
-          nextUnitCount = Math.max(2, nextUnitCount)
+          nextUnitCount = Math.min(3, Math.max(2, nextUnitCount))
         }
 
         let nextProducts = opening.products
@@ -859,13 +860,22 @@ export default function OpeningManager({
                 }
               }
 
-              return createEmptyProduct(
-                `${opening.openingNumber}${letter}`,
-                getExteriorPosition(
+              const firstProduct =
+                opening.products[0] ??
+                createEmptyProduct(
+                  opening.openingNumber,
+                  'Single unit',
+                )
+
+              return {
+                ...firstProduct,
+                id: crypto.randomUUID(),
+                label: `${opening.openingNumber}${letter}`,
+                position: getExteriorPosition(
                   index,
                   nextUnitCount,
                 ),
-              )
+              }
             },
           )
         }
@@ -1044,6 +1054,31 @@ export default function OpeningManager({
 
     if (!firstProduct) {
       return pictureImage
+    }
+
+    if (opening.isMulled) {
+      const isHung =
+        firstProduct.productCategory === 'Double Hung' ||
+        firstProduct.productCategory === 'Single Hung'
+
+      const isSliding =
+        firstProduct.productCategory === 'Sliding Window'
+
+      if (isHung && opening.unitCount === 2) {
+        return doubleHungMulled2Image
+      }
+
+      if (isHung && opening.unitCount === 3) {
+        return doubleHungMulled3Image
+      }
+
+      if (isSliding && opening.unitCount === 2) {
+        return slidingMulled2Image
+      }
+
+      if (isSliding && opening.unitCount === 3) {
+        return slidingMulled3Image
+      }
     }
 
     return getProductImage(firstProduct)
@@ -1312,9 +1347,6 @@ export default function OpeningManager({
                   >
                     <option value={2}>2 units</option>
                     <option value={3}>3 units</option>
-                    <option value={4}>4 units</option>
-                    <option value={5}>5 units</option>
-                    <option value={6}>6 units</option>
                   </select>
                 </div>
               )}
@@ -1707,15 +1739,6 @@ export default function OpeningManager({
                                           </option>
                                           <option value={3}>
                                             3 units
-                                          </option>
-                                          <option value={4}>
-                                            4 units
-                                          </option>
-                                          <option value={5}>
-                                            5 units
-                                          </option>
-                                          <option value={6}>
-                                            6 units
                                           </option>
                                         </select>
                                       </div>
@@ -2505,10 +2528,16 @@ function ProductEditor({
           />
 
           {product.grids === 'Yes' && (
-            <TextField
+            <SelectField
               label="Grid pattern"
               value={product.gridPattern}
-              placeholder="Example: 2 x 2"
+              options={[
+                '2 x 2',
+                '2 x 3',
+                '3 x 3',
+                'Match Existing',
+                'Custom',
+              ]}
               onChange={(value) =>
                 onChange(
                   openingId,

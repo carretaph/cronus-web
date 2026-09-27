@@ -1,4 +1,4 @@
-import doubleHung from '../../assets/windows/double-hung.png'
+import doubleHung from '../../assets/windows/double-hung-2units.png'
 import casement from '../../assets/windows/casement.png'
 import sliding from '../../assets/windows/sliding.png'
 import picture from '../../assets/windows/picture.png'

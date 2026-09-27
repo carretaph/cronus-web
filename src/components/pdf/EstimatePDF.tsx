@@ -15,7 +15,7 @@ import pictureImage from '../../assets/windows/Plygem/picture.png'
 import singleHungImage from '../../assets/windows/Plygem/singlehung.png'
 import slidingImage from '../../assets/windows/Plygem/sliding.png'
 import doorImage from '../../assets/door-hero.png'
-import cronusLogo from '../../assets/cronus-logo.png'
+import storyLogo from '../../assets/story-windows-doors-logo.png'
 
 type EstimateCustomer = {
   name: string
@@ -40,6 +40,9 @@ type EstimateProduct = {
   price: number
   promotionalPrice: number
   savings: number
+  image?: string
+  unitCount?: number
+  isMulled?: boolean
 }
 
 type EstimateDiscount = {
@@ -277,8 +280,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
   },
   termsHeader: {
-    marginTop: 14,
-    paddingBottom: 5,
+    marginTop: 9,
+    paddingBottom: 4,
     borderBottomWidth: 1,
     borderBottomColor: dark,
     fontSize: 9,
@@ -286,14 +289,14 @@ const styles = StyleSheet.create({
   },
   termsLayout: {
     flexDirection: 'row',
-    gap: 22,
-    paddingTop: 10,
+    gap: 20,
+    paddingTop: 6,
   },
   termsColumn: {
     flex: 1,
   },
   termBlock: {
-    marginBottom: 9,
+    marginBottom: 6,
   },
   termTitle: {
     marginBottom: 2,
@@ -301,12 +304,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
   },
   termBody: {
-    fontSize: 7.1,
-    lineHeight: 1.4,
+    fontSize: 7,
+    lineHeight: 1.3,
   },
   salesCard: {
-    marginBottom: 11,
-    padding: 9,
+    marginBottom: 7,
+    padding: 7,
     borderWidth: 0.8,
     borderColor: border,
     backgroundColor: soft,
@@ -320,14 +323,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
   },
   paymentBox: {
-    marginTop: 7,
-    padding: 9,
+    marginTop: 4,
+    padding: 7,
     borderWidth: 0.8,
     borderColor: border,
   },
   paymentLine: {
-    marginTop: 3,
-    fontSize: 7.1,
+    marginTop: 2,
+    fontSize: 7,
   },
   footer: {
     position: 'absolute',
@@ -439,15 +442,15 @@ export default function EstimatePDF({
 }: EstimatePDFProps) {
   return (
     <Document
-      title={`Cronus Estimate ${estimateNumber}`}
-      author="Cronus Windows & Doors LLC"
+      title={`Story Windows & Doors Estimate ${estimateNumber}`}
+      author="Story Windows & Doors"
       subject="Window and door project estimate"
-      creator="Cronus"
+      creator="Story Windows & Doors"
     >
       <Page size="LETTER" style={styles.page}>
         <View style={styles.header} fixed>
           <View style={styles.headerLeft}>
-            <Image src={cronusLogo} style={styles.logo} />
+            <Image src={storyLogo} style={styles.logo} />
 
             <View style={styles.customerBlock}>
               <View style={styles.customerLine}>
@@ -491,16 +494,16 @@ export default function EstimatePDF({
           <View style={styles.headerRight}>
             <View style={styles.companyInfo}>
               <Text style={styles.companyDataLine}>
-                5642 Water Rose Rd
+                2005 Murcott Dr F
               </Text>
               <Text style={styles.companyDataLine}>
-                Winter Garden, FL 34787
+                St Cloud, FL 34771
               </Text>
               <Text style={styles.companyDataLine}>
-                321-320-8310
+                407-279-6536
               </Text>
               <Text style={styles.companyDataLine}>
-                info.cronus@mail.com
+                Customers@storywindows.com
               </Text>
             </View>
 
@@ -597,9 +600,30 @@ export default function EstimatePDF({
               ]}
             >
               <Image
-                src={getProductImage(product.category)}
+                src={product.image ?? getProductImage(product.category)}
                 style={styles.productImage}
               />
+
+              {product.isMulled && (
+                <Text
+                  style={{
+                    marginTop: 3,
+                    fontSize: 7,
+                    fontFamily: 'Helvetica-Bold',
+                    textAlign: 'center',
+                  }}
+                >
+                  {product.unitCount}{' '}
+                  {product.category === 'Sliding Window'
+                    ? 'SLIDERS'
+                    : product.category === 'Double Hung'
+                      ? 'DH'
+                      : product.category === 'Single Hung'
+                        ? 'SH'
+                        : product.category.toUpperCase()}{' '}
+                  MULLED
+                </Text>
+              )}
             </View>
 
             <View
@@ -731,7 +755,7 @@ export default function EstimatePDF({
               </Text>
               <Text style={styles.termBody}>
                 Final measurements will be verified by
-                Cronus prior to manufacturing. Any required
+                Story Windows & Doors prior to manufacturing. Any required
                 adjustments will be discussed with the
                 customer before production.
               </Text>
@@ -798,7 +822,7 @@ export default function EstimatePDF({
               <Text style={styles.termBody}>
                 Products and installation are covered under
                 the applicable manufacturer's warranty and
-                Cronus workmanship warranty.
+                Story Windows & Doors workmanship warranty.
               </Text>
             </View>
 
@@ -830,38 +854,11 @@ export default function EstimatePDF({
               </Text>
             </View>
 
-            <View style={styles.termBlock}>
-              <Text style={styles.termBody}>
-                Please make all checks payable to Cronus
-                Windows &amp; Doors LLC.
-              </Text>
-            </View>
-
-            <View style={styles.paymentBox}>
-              <Text style={styles.termTitle}>
-                Bank Transfer Information
-              </Text>
-              <Text style={styles.paymentLine}>
-                Bank: ______________________________
-              </Text>
-              <Text style={styles.paymentLine}>
-                Account Name: Cronus Windows &amp; Doors LLC
-              </Text>
-              <Text style={styles.paymentLine}>
-                Account Number: ____________________
-              </Text>
-              <Text style={styles.paymentLine}>
-                Routing Number: ____________________
-              </Text>
-              <Text style={styles.paymentLine}>
-                Reference: Customer Name / Estimate Number
-              </Text>
-            </View>
           </View>
         </View>
 
         <View style={styles.footer} fixed>
-          <Text>Cronus Windows &amp; Doors LLC</Text>
+          <Text>Story Windows &amp; Doors</Text>
           <Text>
             {estimateNumber}
           </Text>

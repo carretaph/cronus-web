@@ -4,6 +4,11 @@ import { pdf } from '@react-pdf/renderer'
 
 import EstimatePDF from '../components/pdf/EstimatePDF'
 
+import doubleHungMulled2Image from '../assets/windows/double-hung-2units.png'
+import doubleHungMulled3Image from '../assets/windows/double-hung-3units.png'
+import slidingMulled2Image from '../assets/windows/sliding-2units.png'
+import slidingMulled3Image from '../assets/windows/sliding-3units.png'
+
 import { getCustomers } from '../services/customersApi'
 import type { ApiCustomer } from '../services/customersApi'
 import OpeningManager from './OpeningManager'
@@ -159,7 +164,7 @@ function createNextEstimateNumber() {
     String(nextCounter),
   )
 
-  return `CRON${shortYear}-${String(nextCounter).padStart(
+  return `STORY${shortYear}-${String(nextCounter).padStart(
     3,
     '0',
   )}`
@@ -856,28 +861,27 @@ export default function NewQuote() {
     ),
   )
 
-  const windowCount = openings
-    .filter((opening) => opening.isActive !== false)
-    .reduce(
-      (total, opening) =>
-        total +
-        opening.products.filter(
-          (product) =>
-            !doorCategories.has(product.productCategory),
-        ).length,
-      0,
-    )
+  const activeOpenings = openings.filter(
+    (opening) => opening.isActive !== false,
+  )
 
-  const doorCount = openings
-    .filter((opening) => opening.isActive !== false)
-    .reduce(
-      (total, opening) =>
-        total +
-        opening.products.filter((product) =>
-          doorCategories.has(product.productCategory),
-        ).length,
-      0,
+  const windowCount = activeOpenings.filter((opening) => {
+    const firstProduct = opening.products[0]
+
+    return (
+      firstProduct &&
+      !doorCategories.has(firstProduct.productCategory)
     )
+  }).length
+
+  const doorCount = activeOpenings.filter((opening) => {
+    const firstProduct = opening.products[0]
+
+    return (
+      firstProduct &&
+      doorCategories.has(firstProduct.productCategory)
+    )
+  }).length
 
   const totalProducts = windowCount + doorCount
 
@@ -1227,22 +1231,67 @@ export default function NewQuote() {
     () =>
       openings
         .filter((opening) => opening.isActive !== false)
-        .flatMap((opening) =>
-          opening.products.map((product) => ({
-          id: product.id,
-          openingNumber: opening.openingNumber,
-          location: opening.location,
-          category: product.productCategory,
-          width: product.width,
-          height: product.height,
-          impact: opening.impact,
-          price: calculateProductPrice(
-            opening,
+        .map((opening) => {
+          const firstProduct = opening.products[0]
+
+          if (!firstProduct) {
+            return null
+          }
+
+          const openingPrice = opening.products.reduce(
+            (total, product) =>
+              total +
+              calculateProductPrice(
+                opening,
+                product,
+                projectForm.projectType,
+              ),
+            0,
+          )
+
+          const isHung =
+            firstProduct.productCategory === 'Double Hung' ||
+            firstProduct.productCategory === 'Single Hung'
+
+          const isSliding =
+            firstProduct.productCategory === 'Sliding Window'
+
+          let image: string | undefined
+
+          if (opening.isMulled && isHung) {
+            image =
+              opening.unitCount === 3
+                ? doubleHungMulled3Image
+                : doubleHungMulled2Image
+          }
+
+          if (opening.isMulled && isSliding) {
+            image =
+              opening.unitCount === 3
+                ? slidingMulled3Image
+                : slidingMulled2Image
+          }
+
+          return {
+            id: firstProduct.id,
+            openingNumber: opening.openingNumber,
+            location: opening.location,
+            category: firstProduct.productCategory,
+            width: firstProduct.width,
+            height: firstProduct.height,
+            impact: opening.impact,
+            price: openingPrice,
+            image,
+            isMulled: opening.isMulled,
+            unitCount: opening.unitCount,
+          }
+        })
+        .filter(
+          (
             product,
-            projectForm.projectType,
-          ),
-        })),
-      ),
+          ): product is NonNullable<typeof product> =>
+            product !== null,
+        ),
     [openings, projectForm.projectType],
   )
 
