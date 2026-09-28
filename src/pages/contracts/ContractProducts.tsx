@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { calculateCoreProductPrice } from '../../services/pricingService'
+import {
+  getContractByNumber,
+  updateContract,
+} from '../../services/contractsApi'
 
 const contractHandoffStorageKey =
   'cronus_contract_handoff_v1'
@@ -254,7 +258,7 @@ export default function ContractProducts() {
       }
     }
 
-    const updatedDraft = {
+    const updatedDraft: Record<string, unknown> = {
       ...parsedDraft,
       contractNumber: handoff?.contractNumber ?? '',
       estimateNumber: handoff?.estimateNumber ?? '',
@@ -274,6 +278,8 @@ export default function ContractProducts() {
       contractDraftStorageKey,
       JSON.stringify(updatedDraft),
     )
+
+    return updatedDraft
   }
 
   function handleBack() {
@@ -281,8 +287,58 @@ export default function ContractProducts() {
     navigate('/portal/contracts/project')
   }
 
-  function handleNext() {
-    saveProductsDraft()
+  async function handleNext() {
+    const updatedDraft = saveProductsDraft()
+
+    const contractNumber =
+      typeof updatedDraft.contractNumber === 'string'
+        ? updatedDraft.contractNumber
+        : ''
+
+    if (!contractNumber) {
+      window.alert(
+        'Unable to identify the contract number.',
+      )
+      return
+    }
+
+    try {
+      const existingContract =
+        await getContractByNumber(
+          contractNumber,
+        )
+
+      if (!existingContract) {
+        window.alert(
+          'The Draft contract could not be found on the server.',
+        )
+        return
+      }
+
+      await updateContract(
+        existingContract.id,
+        {
+          ...existingContract,
+          contractJson:
+            JSON.stringify(updatedDraft),
+          updatedAt:
+            typeof updatedDraft.updatedAt === 'string'
+              ? updatedDraft.updatedAt
+              : new Date().toISOString(),
+        },
+      )
+    } catch (error) {
+      console.error(
+        'Unable to synchronize contract products draft:',
+        error,
+      )
+
+      window.alert(
+        'The products were saved locally, but they could not be synchronized with the server.',
+      )
+      return
+    }
+
     navigate('/portal/contracts/payment')
   }
 

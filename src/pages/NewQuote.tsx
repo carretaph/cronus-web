@@ -15,6 +15,7 @@ import { createContract } from '../services/contractsApi'
 import type { ApiContract } from '../services/contractsApi'
 import OpeningManager from './OpeningManager'
 import type { Opening } from './OpeningManager'
+import { getAuthenticatedUser } from '../auth/auth'
 import {
   calculateCoreProductPrice,
   type ProjectType,
@@ -183,11 +184,14 @@ function createNextEstimateNumber() {
   )}`
 }
 
+const getDefaultSalesperson = () =>
+  getAuthenticatedUser()?.name?.trim() || ''
+
 const defaultProjectForm: ProjectForm = {
   projectType: 'replacement',
   projectName: '',
   projectAddress: '',
-  salesperson: 'Alberto',
+  salesperson: getDefaultSalesperson(),
   leadSource: '',
   permitRequired: false,
   hoaRequired: false,
@@ -598,7 +602,7 @@ export default function NewQuote() {
         selectedCustomerId: null,
         projectForm: {
           ...defaultProjectForm,
-          salesperson: draft.projectForm.salesperson,
+          salesperson: getDefaultSalesperson(),
         },
         openings: [],
         discounts: defaultDiscounts.map((discount) => ({
@@ -1071,9 +1075,9 @@ export default function NewQuote() {
       .filter(Boolean)
       .join(', ')
 
-    setProjectForm((currentForm) => ({
+    setProjectForm(() => ({
       ...defaultProjectForm,
-      salesperson: currentForm.salesperson,
+      salesperson: getDefaultSalesperson(),
       projectName: `${customer.firstName} ${customer.lastName}`,
       projectAddress: customerAddress,
     }))

@@ -735,22 +735,7 @@ export default function Contracts() {
 
     localStorage.setItem(
       contractHandoffStorageKey,
-      JSON.stringify({
-        contractNumber:
-          contract.contractNumber,
-
-        estimateNumber:
-          contract.estimateNumber,
-
-        customerName:
-          contract.customerName,
-
-        customerEmail:
-          contract.customerEmail,
-
-        projectTotal:
-          contract.projectTotal,
-      }),
+      JSON.stringify(contract),
     )
 
     if (executed) {

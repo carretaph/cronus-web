@@ -951,6 +951,9 @@ export default function ContractDocument() {
     salesRepresentative?.fullName,
     safeObject(contract.project).salesRepresentative,
     safeObject(contract.projectForm).salesRepresentative,
+    safeObject(contract.projectForm).salesperson,
+    safeObject(contract.project).salesperson,
+    safeObject(contract).salesperson,
   )
 
   const terms = safeObject(contract.terms)
