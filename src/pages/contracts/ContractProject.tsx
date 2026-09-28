@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+const contractHandoffStorageKey = 'cronus_contract_handoff_v1'
 const contractDraftStorageKey = 'cronus_contract_draft_v1'
 
 type YesNoOption = 'Yes' | 'No' | 'Unknown'
@@ -93,24 +94,80 @@ export default function ContractProject() {
     useState<ContractProjectForm>(emptyForm)
 
   useEffect(() => {
+    const storedHandoff = localStorage.getItem(
+      contractHandoffStorageKey,
+    )
+
     const storedDraft = localStorage.getItem(
       contractDraftStorageKey,
     )
 
-    if (!storedDraft) {
-      return
+    let quoteProjectForm: {
+      salesperson?: string
+      leadSource?: string
+      permitRequired?: boolean
+      hoaRequired?: boolean
+    } = {}
+
+    let savedProject: Partial<ContractProjectForm> = {}
+
+    if (storedHandoff) {
+      try {
+        const parsedHandoff = JSON.parse(storedHandoff)
+
+        if (
+          parsedHandoff.projectForm &&
+          typeof parsedHandoff.projectForm === 'object'
+        ) {
+          quoteProjectForm = parsedHandoff.projectForm
+        }
+      } catch {
+        localStorage.removeItem(contractHandoffStorageKey)
+      }
     }
 
-    try {
-      const parsedDraft = JSON.parse(storedDraft)
+    if (storedDraft) {
+      try {
+        const parsedDraft = JSON.parse(storedDraft)
 
-      setForm((current) => ({
-        ...current,
-        ...parsedDraft.project,
-      }))
-    } catch {
-      localStorage.removeItem(contractDraftStorageKey)
+        if (
+          parsedDraft.project &&
+          typeof parsedDraft.project === 'object'
+        ) {
+          savedProject =
+            parsedDraft.project as Partial<ContractProjectForm>
+        }
+      } catch {
+        localStorage.removeItem(contractDraftStorageKey)
+      }
     }
+
+    setForm((current) => ({
+      ...current,
+      salesRepresentative:
+        savedProject.salesRepresentative ||
+        quoteProjectForm.salesperson ||
+        current.salesRepresentative,
+      leadSource:
+        savedProject.leadSource ||
+        quoteProjectForm.leadSource ||
+        current.leadSource,
+      permitRequired:
+        savedProject.permitRequired ??
+        (typeof quoteProjectForm.permitRequired === 'boolean'
+          ? quoteProjectForm.permitRequired
+            ? 'Yes'
+            : 'No'
+          : current.permitRequired),
+      hoaRequired:
+        savedProject.hoaRequired ??
+        (typeof quoteProjectForm.hoaRequired === 'boolean'
+          ? quoteProjectForm.hoaRequired
+            ? 'Yes'
+            : 'No'
+          : current.hoaRequired),
+      ...savedProject,
+    }))
   }, [])
 
   function updateField<
@@ -200,15 +257,6 @@ export default function ContractProject() {
 
           <div className="mt-7 grid gap-5 md:grid-cols-2">
             <Field
-              label="Sales Representative"
-              value={form.salesRepresentative}
-              required
-              onChange={(value) =>
-                updateField('salesRepresentative', value)
-              }
-            />
-
-            <Field
               label="Sales Manager"
               value={form.salesManager}
               onChange={(value) =>
@@ -221,15 +269,6 @@ export default function ContractProject() {
               value={form.projectManager}
               onChange={(value) =>
                 updateField('projectManager', value)
-              }
-            />
-
-            <Field
-              label="Lead Source"
-              value={form.leadSource}
-              placeholder="Referral, Website, Home Show..."
-              onChange={(value) =>
-                updateField('leadSource', value)
               }
             />
 
@@ -316,22 +355,6 @@ export default function ContractProject() {
           />
 
           <div className="mt-7 grid gap-5 md:grid-cols-2">
-            <YesNoField
-              label="Permit Required"
-              value={form.permitRequired}
-              onChange={(value) =>
-                updateField('permitRequired', value)
-              }
-            />
-
-            <YesNoField
-              label="HOA Approval Required"
-              value={form.hoaRequired}
-              onChange={(value) =>
-                updateField('hoaRequired', value)
-              }
-            />
-
             <YesNoField
               label="Engineering Required"
               value={form.engineeringRequired}

@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  getContractByNumber,
+  updateContract,
+} from '../../services/contractsApi'
 
 const contractHandoffStorageKey = 'cronus_contract_handoff_v1'
 const contractDraftStorageKey = 'cronus_contract_draft_v1'
@@ -217,7 +221,7 @@ setForm((current) => ({
     }))
   }
 
-  function handleNext() {
+  async function handleNext() {
     const projectAddress = form.projectSameAsBilling
       ? form.billingAddress
       : form.projectAddress
@@ -266,6 +270,42 @@ setForm((current) => ({
       contractDraftStorageKey,
       JSON.stringify(updatedDraft),
     )
+
+    try {
+      const existingContract =
+        await getContractByNumber(
+          form.contractNumber,
+        )
+
+      if (existingContract) {
+        await updateContract(
+          existingContract.id,
+          {
+            ...existingContract,
+            customerName:
+              `${form.buyerFirstName} ${form.buyerLastName}`.trim() ||
+              existingContract.customerName,
+            customerEmail:
+              form.email ||
+              existingContract.customerEmail,
+            contractJson:
+              JSON.stringify(updatedDraft),
+            updatedAt:
+              updatedDraft.updatedAt,
+          },
+        )
+      }
+    } catch (error) {
+      console.error(
+        'Unable to synchronize contract customer draft:',
+        error,
+      )
+
+      window.alert(
+        'The contract was saved locally, but it could not be synchronized with the server.',
+      )
+      return
+    }
 
     navigate('/portal/contracts/project')
   }

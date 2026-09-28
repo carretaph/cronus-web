@@ -555,9 +555,33 @@ export default function Contracts() {
   }, [apiContracts])
 
   function loadContracts() {
+    let currentDraft: ContractRecord | null = null
+
+    const storedDraft = localStorage.getItem(
+      contractDraftStorageKey,
+    )
+
+    if (storedDraft) {
+      try {
+        const parsedDraft = JSON.parse(
+          storedDraft,
+        ) as ContractRecord
+
+        if (
+          parsedDraft.contractNumber ||
+          parsedDraft.estimateNumber
+        ) {
+          currentDraft = parsedDraft
+        }
+      } catch {
+        currentDraft = null
+      }
+    }
+
     const mergedContracts =
       uniqueContracts([
         ...apiContracts,
+        ...(currentDraft ? [currentDraft] : []),
       ])
 
     setContracts(mergedContracts)

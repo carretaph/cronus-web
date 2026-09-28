@@ -10,11 +10,13 @@ import {
 
 type CustomerTableProps = {
   customers: Customer[]
+  onEdit: (customer: Customer) => void
   onDelete: (customerId: string) => void
 }
 
 export default function CustomerTable({
   customers,
+  onEdit,
   onDelete,
 }: CustomerTableProps) {
   const user = getAuthenticatedUser()
@@ -77,6 +79,7 @@ export default function CustomerTable({
                 <CustomerRow
                   key={customer.id}
                   customer={customer}
+                  onEdit={onEdit}
                   onDelete={onDelete}
                   showOwnership={
                     showOwnership
@@ -93,12 +96,14 @@ export default function CustomerTable({
 
 type CustomerRowProps = {
   customer: Customer
+  onEdit: (customer: Customer) => void
   onDelete: (customerId: string) => void
   showOwnership: boolean
 }
 
 function CustomerRow({
   customer,
+  onEdit,
   onDelete,
   showOwnership,
 }: CustomerRowProps) {
@@ -181,10 +186,10 @@ function CustomerRow({
         <div className="flex justify-end gap-2">
           <button
             type="button"
-            disabled
-            className="rounded-lg border border-[#DDD9D0] px-3.5 py-2 text-xs font-medium text-[#777777] opacity-60"
+            onClick={() => onEdit(customer)}
+            className="rounded-lg border border-[#DDD9D0] px-3.5 py-2 text-xs font-medium text-[#777777] transition hover:border-[#B59A68] hover:text-[#B59A68]"
           >
-            View
+            Edit
           </button>
 
           <Link

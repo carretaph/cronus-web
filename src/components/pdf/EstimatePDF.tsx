@@ -9,7 +9,7 @@ import {
 
 import awningImage from '../../assets/windows/Plygem/awning.png'
 import casementImage from '../../assets/windows/Plygem/casement.png'
-import doubleHungImage from '../../assets/windows/Plygem/doublehung.png'
+import doubleHungImage from '../../assets/windows/double-hung-house.png'
 import geometricImage from '../../assets/windows/Plygem/geometric.png'
 import pictureImage from '../../assets/windows/Plygem/picture.png'
 import singleHungImage from '../../assets/windows/Plygem/singlehung.png'

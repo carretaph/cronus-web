@@ -72,6 +72,33 @@ export async function createCustomer(
   return response.json()
 }
 
+export async function updateCustomer(
+  customerId: string,
+  customer: ApiCustomer,
+): Promise<ApiCustomer> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/customers/${customerId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthorizationHeaders(),
+      },
+      body: JSON.stringify(customer),
+    },
+  )
+
+  if (!response.ok) {
+    handleUnauthorizedResponse(response)
+
+    throw new Error(
+      `Unable to update customer: ${response.status}`,
+    )
+  }
+
+  return response.json()
+}
+
 export async function deleteCustomer(
   customerId: string,
 ): Promise<void> {

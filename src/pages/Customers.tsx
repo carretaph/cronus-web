@@ -7,6 +7,7 @@ import {
   createCustomer as createCustomerApi,
   deleteCustomer as deleteCustomerApi,
   getCustomers as getCustomersApi,
+  updateCustomer as updateCustomerApi,
 } from '../services/customersApi'
 
 import type { Customer } from './customerdata'
@@ -63,6 +64,12 @@ export default function Customers() {
   const [showCustomerForm, setShowCustomerForm] =
     useState(false)
 
+  const [customerFormMode, setCustomerFormMode] =
+    useState<'new' | 'view' | 'edit'>('new')
+
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<Customer | null>(null)
+
   const [form, setForm] =
     useState<CustomerFormState>(emptyCustomerForm)
 
@@ -106,15 +113,41 @@ export default function Customers() {
     }))
   }
 
+  function populateCustomerForm(customer: Customer) {
+    setForm({
+      firstName: customer.firstName ?? '',
+      lastName: customer.lastName ?? '',
+      phone: customer.phone ?? '',
+      email: customer.email ?? '',
+      address: customer.address ?? '',
+      city: customer.city ?? '',
+      state: customer.state ?? '',
+      zipCode: customer.zipCode ?? '',
+      notes: customer.notes ?? '',
+    })
+  }
+
   function openCustomerForm() {
     setErrorMessage('')
+    setSelectedCustomer(null)
+    setCustomerFormMode('new')
     setForm(emptyCustomerForm)
+    setShowCustomerForm(true)
+  }
+
+  function openCustomerEdit(customer: Customer) {
+    setErrorMessage('')
+    setSelectedCustomer(customer)
+    setCustomerFormMode('edit')
+    populateCustomerForm(customer)
     setShowCustomerForm(true)
   }
 
   function closeCustomerForm() {
     setErrorMessage('')
     setShowCustomerForm(false)
+    setSelectedCustomer(null)
+    setCustomerFormMode('new')
   }
 
   async function handleSubmit(
@@ -136,8 +169,8 @@ export default function Customers() {
     }
 
     try {
-      const newCustomer = await createCustomerApi({
-        id: crypto.randomUUID(),
+      const customerPayload = {
+        id: selectedCustomer?.id ?? crypto.randomUUID(),
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         phone: form.phone.trim(),
@@ -147,15 +180,41 @@ export default function Customers() {
         state: form.state.trim().toUpperCase(),
         zipCode: form.zipCode.trim(),
         notes: form.notes.trim(),
-        createdAt: new Date().toISOString(),
-      })
+        createdAt:
+          selectedCustomer?.createdAt ??
+          new Date().toISOString(),
+      }
 
-      setCustomers((currentCustomers) => [
-        newCustomer,
-        ...currentCustomers,
-      ])
+      if (
+        customerFormMode === 'edit' &&
+        selectedCustomer
+      ) {
+        const updatedCustomer =
+          await updateCustomerApi(
+            selectedCustomer.id,
+            customerPayload,
+          )
+
+        setCustomers((currentCustomers) =>
+          currentCustomers.map((customer) =>
+            customer.id === updatedCustomer.id
+              ? updatedCustomer
+              : customer,
+          ),
+        )
+      } else {
+        const newCustomer =
+          await createCustomerApi(customerPayload)
+
+        setCustomers((currentCustomers) => [
+          newCustomer,
+          ...currentCustomers,
+        ])
+      }
 
       setForm(emptyCustomerForm)
+      setSelectedCustomer(null)
+      setCustomerFormMode('new')
       setShowCustomerForm(false)
     } catch (error) {
       console.error('Unable to create customer:', error)
@@ -259,6 +318,7 @@ export default function Customers() {
         ) : filteredCustomers.length > 0 ? (
           <CustomerTable
             customers={filteredCustomers}
+            onEdit={openCustomerEdit}
             onDelete={handleDelete}
           />
         ) : (

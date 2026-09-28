@@ -1,5 +1,39 @@
 import { useMemo, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { calculateCoreProductPrice } from '../../services/pricingService'
+
+import doubleHungHouseImage from '../../assets/windows/double-hung-house.png'
+import doubleHung2Image from '../../assets/windows/double-hung-2units.png'
+import doubleHung3Image from '../../assets/windows/double-hung-3units.png'
+import slidingImage from '../../assets/windows/sliding.png'
+import sliding2Image from '../../assets/windows/sliding-2units.png'
+import sliding3Image from '../../assets/windows/sliding-3units.png'
+import picturePlygemImage from '../../assets/windows/Plygem/picture.png'
+import casementPlygemImage from '../../assets/windows/Plygem/casement.png'
+import awningPlygemImage from '../../assets/windows/Plygem/awning.png'
+import slidingGlassDoorImage from '../../assets/doors/sliding-glass-door.png'
+import frenchDoorImage from '../../assets/doors/french-door.png'
+import entryDoorImage from '../../assets/doors/entry-door.png'
+import pictureImage from '../../assets/windows/picture.png'
+import specialtyHouseImage from '../../assets/windows/specialty-house.png'
+
+import equalLegArchImage from '../../assets/windows/specialty/equal-leg-arch.png'
+import springlineImage from '../../assets/windows/specialty/springline.png'
+import unequalLegArchLeftImage from '../../assets/windows/specialty/unequal-leg-arch-left.png'
+import unequalLegArchRightImage from '../../assets/windows/specialty/unequal-leg-arch-right.png'
+import trapezoidImage from '../../assets/windows/specialty/trapezoid.png'
+import rightTriangleLeftImage from '../../assets/windows/specialty/right-triangle-left.png'
+import rightTriangleRightImage from '../../assets/windows/specialty/right-triangle-right.png'
+import triangleImage from '../../assets/windows/specialty/triangle.png'
+import octagonImage from '../../assets/windows/specialty/octagon.png'
+import hexagonImage from '../../assets/windows/specialty/hexagon.png'
+import circleImage from '../../assets/windows/specialty/circle.png'
+import peakPentagonImage from '../../assets/windows/specialty/peak-pentagon.png'
+import pentagonImage from '../../assets/windows/specialty/pentagon.png'
+import circleTopImage from '../../assets/windows/specialty/circle-top.png'
+import chordImage from '../../assets/windows/specialty/chord.png'
+import quarterCircleLeftImage from '../../assets/windows/specialty/quarter-circle-left.png'
+import quarterCircleRightImage from '../../assets/windows/specialty/quarter-circle-right.png'
 
 const contractDraftStorageKey = 'cronus_contract_draft_v1'
 const activeCompletedContractStorageKey =
@@ -7,14 +41,14 @@ const activeCompletedContractStorageKey =
 const contractHandoffStorageKey = 'cronus_contract_handoff_v1'
 
 const company = {
-  displayName: 'Cronus Windows & Doors',
-  legalName: 'Cronus Windows & Doors LLC',
-  licenseNumber: 'LICENSE NUMBER',
-  addressLine1: 'COMPANY ADDRESS',
-  addressLine2: 'CITY, FL ZIP CODE',
-  phone: 'COMPANY PHONE',
-  email: 'COMPANY EMAIL',
-  website: 'www.cronuswindows.com',
+  displayName: 'Story Windows & Doors',
+  legalName: 'Story Roofing LLC d/b/a Story Windows & Doors',
+  licenseNumber: 'CCC057111',
+  addressLine1: '2005 Murcott Dr F',
+  addressLine2: 'St Cloud, FL 34771',
+  phone: '407 279 6536',
+  email: 'Customers@storywindows.com',
+  website: '',
 }
 
 const assetModules = import.meta.glob(
@@ -26,12 +60,12 @@ const assetModules = import.meta.glob(
   },
 ) as Record<string, string>
 
-function findCronusLogo() {
+function findStoryLogo() {
   const entries = Object.entries(assetModules)
 
   const preferred = entries.find(([path]) => {
     const normalized = path.toLowerCase()
-    return normalized.includes('cronus') && normalized.includes('logo')
+    return normalized.includes('story-windows-doors-logo')
   })
 
   const fallback = entries.find(([path]) =>
@@ -41,7 +75,98 @@ function findCronusLogo() {
   return preferred?.[1] ?? fallback?.[1] ?? ''
 }
 
-const cronusLogoUrl = findCronusLogo()
+const storyLogoUrl = findStoryLogo()
+
+
+const contractProductImages: Record<string, string> = {
+  'Single Hung': doubleHungHouseImage,
+  'Double Hung': doubleHungHouseImage,
+  'Sliding Window': slidingImage,
+  'Picture Window': picturePlygemImage,
+  Casement: casementPlygemImage,
+  Awning: awningPlygemImage,
+  'Sliding Glass Door': slidingGlassDoorImage,
+  'French Door': frenchDoorImage,
+  'Entry Door': entryDoorImage,
+  Transom: pictureImage,
+  Shape: specialtyHouseImage,
+}
+
+const contractSpecialtyImages: Record<string, string> = {
+  'Equal Leg Arch': equalLegArchImage,
+  Springline: springlineImage,
+  'Unequal Leg Arch - Left': unequalLegArchLeftImage,
+  'Unequal Leg Arch - Right': unequalLegArchRightImage,
+  Trapezoid: trapezoidImage,
+  'Right Triangle - Left': rightTriangleLeftImage,
+  'Right Triangle - Right': rightTriangleRightImage,
+  Triangle: triangleImage,
+  Octagon: octagonImage,
+  Hexagon: hexagonImage,
+  Circle: circleImage,
+  'Peak Pentagon': peakPentagonImage,
+  Pentagon: pentagonImage,
+  'Circle Top': circleTopImage,
+  Chord: chordImage,
+  'Quarter Circle - Left': quarterCircleLeftImage,
+  'Quarter Circle - Right': quarterCircleRightImage,
+}
+
+function getContractProductImage(product: Product) {
+  const category = safeString(product.productCategory)
+
+  if (category === 'Shape') {
+    const configuration = safeString(product.configuration)
+
+    return (
+      contractSpecialtyImages[configuration] ??
+      contractProductImages.Shape
+    )
+  }
+
+  return contractProductImages[category] ?? ''
+}
+
+function getContractOpeningImage(line: ProductLine) {
+  const firstProduct = line.products[0]
+
+  if (!firstProduct) {
+    return contractProductImages['Picture Window']
+  }
+
+  const category = safeString(firstProduct.productCategory)
+  let imageUrl = ''
+
+  if (line.isMulled) {
+    const isHung =
+      category === 'Double Hung' ||
+      category === 'Single Hung'
+
+    const isSliding = category === 'Sliding Window'
+
+    if (isHung && line.unitCount === 2) {
+      imageUrl = doubleHung2Image
+    }
+
+    if (isHung && line.unitCount === 3) {
+      imageUrl = doubleHung3Image
+    }
+
+    if (isSliding && line.unitCount === 2) {
+      imageUrl = sliding2Image
+    }
+
+    if (isSliding && line.unitCount === 3) {
+      imageUrl = sliding3Image
+    }
+  }
+
+  if (!imageUrl) {
+    imageUrl = getContractProductImage(firstProduct)
+  }
+
+  return imageUrl
+}
 
 type UnknownRecord = Record<string, unknown>
 
@@ -73,6 +198,8 @@ type Opening = {
   location?: string
   impact?: boolean
   isActive?: boolean
+  isMulled?: boolean
+  unitCount?: number
   mullionCharge?: number
   notes?: string
   products?: Product[]
@@ -147,6 +274,9 @@ type ProductLine = {
   openingImpact: boolean
   openingNotes: string
   mullionCharge: number
+  isMulled: boolean
+  unitCount: number
+  products: Product[]
   product: Product
   quantity: number
   width: number
@@ -417,21 +547,29 @@ function buildProductLines(contract: ContractRecord): ProductLine[] {
     : []
 
   return openings
-      .filter((opening) => opening.isActive !== false)
-      .flatMap((opening, openingIndex) => {
-    const products = Array.isArray(opening.products) ? opening.products : []
+    .filter((opening) => opening.isActive !== false)
+    .map((opening, openingIndex) => {
+      const products = Array.isArray(opening.products) ? opening.products : []
+      const firstProduct = products[0] ?? {}
 
-    return products.map((product, productIndex) => {
-      const quantity = Math.max(1, safeNumber(product.quantity) || 1)
-      const width = parseMeasurement(product.width)
-      const height = parseMeasurement(product.height)
+      const width = parseMeasurement(firstProduct.width)
+      const height = parseMeasurement(firstProduct.height)
       const squareFeet = width > 0 && height > 0 ? (width * height) / 144 : 0
-      const basePrice = calculateProductPrice(opening, product)
+
+      const basePrice = products.reduce((total, product) => {
+        const quantity = Math.max(1, safeNumber(product.quantity) || 1)
+        return total + calculateProductPrice(opening, product) * quantity
+      }, 0)
+
       const mullionCharge = safeNumber(opening.mullionCharge)
 
+      const frozenOpeningPrice =
+        typeof opening.openingPrice === 'number'
+          ? opening.openingPrice
+          : null
+
       return {
-        rowId:
-          safeString(product.id) || `${openingIndex}-${productIndex}`,
+        rowId: safeString(opening.id) || `opening-${openingIndex}`,
         openingNumber: firstString(
           opening.openingNumber,
           openingIndex + 1,
@@ -440,16 +578,25 @@ function buildProductLines(contract: ContractRecord): ProductLine[] {
         openingImpact: Boolean(opening.impact),
         openingNotes: safeString(opening.notes),
         mullionCharge,
-        product,
-        quantity,
+        isMulled: Boolean(opening.isMulled),
+        unitCount: products.length || Math.max(1, safeNumber(opening.unitCount) || 1),
+        products,
+        product: firstProduct,
+        quantity: 1,
         width,
         height,
         squareFeet,
-        basePrice,
-        totalPrice: basePrice * quantity + mullionCharge,
+        basePrice:
+          frozenOpeningPrice !== null
+            ? Math.max(0, frozenOpeningPrice - mullionCharge)
+            : basePrice,
+        totalPrice:
+          frozenOpeningPrice !== null
+            ? frozenOpeningPrice
+            : basePrice + mullionCharge,
       }
     })
-  })
+    .filter((line) => line.products.length > 0)
 }
 
 function getPaymentSummary(contract: ContractRecord, projectTotal: number) {
@@ -471,6 +618,7 @@ function getPaymentSummary(contract: ContractRecord, projectTotal: number) {
     payment.amountFinanced,
     payment.financedAmount,
     payment.financeAmount,
+    payment.financedBalance,
   )
   const tax = firstNumber(payment.tax, payment.salesTax, payment.taxAmount)
   const balanceDue = firstNumber(
@@ -699,6 +847,7 @@ function normalizeDiscountLines(
 }
 
 export default function ContractDocument() {
+  const navigate = useNavigate()
   const contract = useMemo(() => readContractRecord(), [])
   const handoff = useMemo(() => readHandoffRecord(), [])
 
@@ -813,7 +962,7 @@ export default function ContractDocument() {
   const warrantySummary = firstString(
     terms.warrantySummary,
     terms.warranty,
-    'Products and installation are covered under the applicable manufacturer warranty and Cronus workmanship warranty documents supplied with this agreement.',
+    'Products and installation are covered under the applicable manufacturer warranty and Story Windows & Doors workmanship warranty documents supplied with this agreement.',
   )
 
   const pageAgreement = 1
@@ -874,14 +1023,27 @@ export default function ContractDocument() {
         <div className="mx-auto flex max-w-[1100px] flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#B59A68]">
-              Contract Document
+              Step 6 of 8 · Contract Review
             </p>
             <p className="mt-1 text-sm font-medium text-[#555555]">
               {contractNumber} · {customerName || 'Customer'}
             </p>
+            <p className="mt-1 text-xs text-[#888888]">
+              Review the complete contract before presenting terms and acknowledgments to the customer.
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                navigate('/portal/contracts/schedule')
+              }
+              className="rounded-xl border border-[#D8D4CC] bg-white px-5 py-2.5 text-sm font-medium text-[#555555] transition hover:bg-[#F7F5F1]"
+            >
+              Back to Schedule
+            </button>
+
             <button
               type="button"
               onClick={() => {
@@ -915,7 +1077,7 @@ export default function ContractDocument() {
                 const previousTitle = document.title
 
                 document.title =
-                  fileName || `CronusContract${formattedDate}`
+                  fileName || `StoryContract${formattedDate}`
 
                 window.print()
 
@@ -926,6 +1088,16 @@ export default function ContractDocument() {
               className="rounded-xl bg-[#222222] px-5 py-2.5 text-sm font-medium text-white"
             >
               Print / Save PDF
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate('/portal/contracts/terms')
+              }
+              className="rounded-xl bg-[#B59A68] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+            >
+              Proceed to Terms & Acknowledgments
             </button>
           </div>
         </div>
@@ -1122,13 +1294,25 @@ export default function ContractDocument() {
                     <ContractTableCell>{line.location}</ContractTableCell>
                     <ContractTableCell>
                       <strong>
-                        {firstString(
-                          line.product.label,
-                          line.product.productCategory,
-                        )}
+                        {line.isMulled
+                          ? `${line.unitCount} ${
+                              firstString(line.product.productCategory) === 'Double Hung'
+                                ? 'DH'
+                                : firstString(line.product.productCategory) === 'Single Hung'
+                                  ? 'SH'
+                                  : firstString(line.product.productCategory) === 'Sliding Window'
+                                    ? 'SLIDER'
+                                    : firstString(line.product.productCategory, 'Product')
+                            } MULLED`
+                          : firstString(
+                              line.product.label,
+                              line.product.productCategory,
+                            )}
                       </strong>
                       <div className="mt-1 text-[7px] text-[#666666]">
-                        {firstString(line.product.productCategory, 'Product')}
+                        {line.isMulled
+                          ? `${line.unitCount} units`
+                          : firstString(line.product.productCategory, 'Product')}
                       </div>
                     </ContractTableCell>
                     <ContractTableCell>
@@ -1184,11 +1368,24 @@ export default function ContractDocument() {
           <div className="mt-5 grid grid-cols-4 gap-3">
             <DocumentMetric
               label="Windows"
-              value={String(contract.products?.windowCount ?? 0)}
+              value={String(
+                productLines.filter(
+                  (line) =>
+                    !['Sliding Glass Door', 'French Door', 'Entry Door'].includes(
+                      firstString(line.product.productCategory),
+                    ),
+                ).length,
+              )}
             />
             <DocumentMetric
               label="Doors"
-              value={String(contract.products?.doorCount ?? 0)}
+              value={String(
+                productLines.filter((line) =>
+                  ['Sliding Glass Door', 'French Door', 'Entry Door'].includes(
+                    firstString(line.product.productCategory),
+                  ),
+                ).length,
+              )}
             />
             <DocumentMetric
               label="Total Products"
@@ -1228,114 +1425,195 @@ export default function ContractDocument() {
                   Opening {line.openingNumber}
                 </p>
                 <h2 className="mt-2 text-[22px] font-semibold">{line.location}</h2>
-                <p className="mt-1 text-[12px] text-[#555555]">
-                  {firstString(line.product.label, line.product.productCategory)}
+                <p className="mt-1 text-[12px] font-semibold text-[#555555]">
+                  {line.openingNumber}
+                </p>
+                <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#8D7548]">
+                  {line.isMulled
+                    ? `${line.unitCount} ${firstString(
+                        line.product.productCategory,
+                      ) === 'Double Hung'
+                        ? 'DH'
+                        : firstString(line.product.productCategory) === 'Single Hung'
+                          ? 'SH'
+                          : firstString(line.product.productCategory) === 'Sliding Window'
+                            ? 'SLIDER'
+                            : firstString(line.product.productCategory)} MULLED`
+                    : firstString(
+                        line.product.label,
+                        line.product.productCategory,
+                      )}
                 </p>
               </div>
-              <ProductDiagram
-                category={firstString(
+              <ProductImage
+                src={getContractOpeningImage(line)}
+                label={firstString(
                   line.product.productCategory,
                   line.product.label,
                 )}
               />
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-5">
-              <InformationBlock title="Product Configuration">
-                <FieldLine
-                  label="Product Name"
-                  value={firstString(
-                    line.product.label,
-                    line.product.productCategory,
-                  )}
-                />
-                <FieldLine
-                  label="Category"
-                  value={firstString(line.product.productCategory)}
-                />
-                <FieldLine label="Quantity" value={String(line.quantity)} />
-                <FieldLine
-                  label="Width"
-                  value={line.width ? `${line.width} in.` : ''}
-                />
-                <FieldLine
-                  label="Height"
-                  value={line.height ? `${line.height} in.` : ''}
-                />
-                <FieldLine
-                  label="Area"
-                  value={`${line.squareFeet.toFixed(2)} sq. ft.`}
-                />
-                <FieldLine
-                  label="Impact Rated"
-                  value={line.openingImpact ? 'Yes' : 'No'}
-                  strong={line.openingImpact}
-                />
-                <FieldLine
-                  label="Tempered"
-                  value={humanBoolean(line.product.tempered)}
-                />
-              </InformationBlock>
+            <div
+              className={`mt-6 grid gap-4 ${
+                line.products.length >= 3
+                  ? 'grid-cols-3'
+                  : line.products.length === 2
+                    ? 'grid-cols-2'
+                    : 'grid-cols-1'
+              }`}
+            >
+              {line.products.map((product, productIndex) => {
+                const unitLetter = String.fromCharCode(65 + productIndex)
+                const unitWidth = parseMeasurement(product.width)
+                const unitHeight = parseMeasurement(product.height)
+                const unitArea =
+                  unitWidth > 0 && unitHeight > 0
+                    ? (unitWidth * unitHeight) / 144
+                    : 0
 
-              <InformationBlock title="Finish and Options">
+                return (
+                  <div
+                    key={`${line.rowId}-${productIndex}`}
+                    className="rounded-lg border border-[#D8D3C8] bg-[#FAF9F6] p-4"
+                  >
+                    <div className="mb-3 border-b border-[#D8D3C8] pb-2">
+                      <p className="text-[8px] font-bold uppercase tracking-[0.16em] text-[#8D7548]">
+                        Unit {unitLetter}
+                      </p>
+                      <p className="mt-1 text-[12px] font-semibold text-[#262626]">
+                        {firstString(
+                          product.openingNumber,
+                          `${line.openingNumber}${unitLetter}`,
+                        )}
+                      </p>
+                    </div>
+
+                    <FieldLine
+                      label="Product"
+                      value={firstString(
+                        product.label,
+                        product.productCategory,
+                      )}
+                    />
+                    <FieldLine
+                      label="Category"
+                      value={firstString(product.productCategory)}
+                    />
+                    <FieldLine
+                      label="Width"
+                      value={unitWidth ? `${unitWidth} in.` : ''}
+                    />
+                    <FieldLine
+                      label="Height"
+                      value={unitHeight ? `${unitHeight} in.` : ''}
+                    />
+                    <FieldLine
+                      label="Area"
+                      value={
+                        unitArea > 0
+                          ? `${unitArea.toFixed(2)} sq. ft.`
+                          : ''
+                      }
+                    />
+                    <FieldLine
+                      label="Impact Rated"
+                      value={line.openingImpact ? 'Yes' : 'No'}
+                      strong={line.openingImpact}
+                    />
+                    <FieldLine
+                      label="Tempered"
+                      value={humanBoolean(product.tempered)}
+                    />
+                    <FieldLine
+                      label="Interior Color"
+                      value={firstString(
+                        product.interiorColor,
+                        product.color,
+                      )}
+                    />
+                    <FieldLine
+                      label="Exterior Color"
+                      value={firstString(
+                        product.exteriorColor,
+                        product.color,
+                      )}
+                    />
+                    <FieldLine
+                      label="Glass Type"
+                      value={firstString(product.glass)}
+                    />
+                    <FieldLine
+                      label="Glass Package"
+                      value={firstString(
+                        product.glassPackage,
+                        product.glass,
+                      )}
+                    />
+                    <FieldLine
+                      label="Grids"
+                      value={firstString(
+                        product.grids,
+                        product.grid,
+                        'None',
+                      )}
+                    />
+                    <FieldLine
+                      label="Screen"
+                      value={firstString(
+                        product.screens,
+                        product.screen,
+                        'Not specified',
+                      )}
+                    />
+                    <FieldLine
+                      label="Hardware"
+                      value={firstString(product.hardware)}
+                    />
+
+                    {safeString(product.notes) && (
+                      <div className="mt-3 border-t border-[#D8D3C8] pt-2">
+                        <p className="text-[7px] font-bold uppercase tracking-[0.12em] text-[#777777]">
+                          Notes
+                        </p>
+                        <p className="mt-1 text-[8px] leading-[1.45] text-[#555555]">
+                          {safeString(product.notes)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-5">
+              <InformationBlock title="Opening Configuration">
                 <FieldLine
-                  label="Interior Color"
-                  value={firstString(
-                    line.product.interiorColor,
-                    line.product.color,
-                  )}
+                  label="Opening"
+                  value={String(line.openingNumber)}
                 />
                 <FieldLine
-                  label="Exterior Color"
-                  value={firstString(
-                    line.product.exteriorColor,
-                    line.product.color,
-                  )}
+                  label="Configuration"
+                  value={
+                    line.isMulled
+                      ? `${line.unitCount} Unit Mulled`
+                      : 'Single Unit'
+                  }
                 />
                 <FieldLine
-                  label="Glass Type"
-                  value={firstString(line.product.glass)}
-                />
-                <FieldLine
-                  label="Glass Package"
-                  value={firstString(
-                    line.product.glassPackage,
-                    line.product.glass,
-                  )}
-                />
-                <FieldLine
-                  label="Grids"
-                  value={firstString(
-                    line.product.grids,
-                    line.product.grid,
-                    'None',
-                  )}
-                />
-                <FieldLine
-                  label="Screen"
-                  value={firstString(
-                    line.product.screens,
-                    line.product.screen,
-                    'Not specified',
-                  )}
-                />
-                <FieldLine
-                  label="Hardware"
-                  value={firstString(line.product.hardware)}
+                  label="Units"
+                  value={String(line.unitCount)}
                 />
                 <FieldLine
                   label="Mullion Charge"
                   value={formatCurrency(line.mullionCharge)}
                 />
               </InformationBlock>
-            </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-5">
               <NotesBlock
-                title="Product Notes"
-                value={safeString(line.product.notes)}
+                title="Opening Notes"
+                value={line.openingNotes}
               />
-              <NotesBlock title="Opening Notes" value={line.openingNotes} />
             </div>
 
             <div className="mt-5 grid grid-cols-3 gap-3">
@@ -1434,7 +1712,7 @@ export default function ContractDocument() {
 
           <div className="mt-7 rounded-lg border border-[#AFA99D] p-5 text-[10px] leading-[1.6]">
             By signing below, Buyer(s) confirm the payment method and schedule
-            reflected above and authorize Cronus Windows & Doors to process
+            reflected above and authorize Story Windows & Doors to process
             payments in accordance with the signed agreement and any separately
             executed financing or payment authorization documents.
           </div>
@@ -1693,7 +1971,7 @@ export default function ContractDocument() {
 
           <div className="mt-6 space-y-4">
             <ProcessStep number="1" title="Technical Measurement">
-              Buyer must provide reasonable access so Cronus can verify every
+              Buyer must provide reasonable access so Story Windows & Doors can verify every
               opening, installation condition and final manufacturing dimension.
             </ProcessStep>
             <ProcessStep number="2" title="Permits and HOA">
@@ -1779,7 +2057,7 @@ export default function ContractDocument() {
               not included unless specifically listed.
             </TermClause>
             <TermClause number="8" title="Scheduling and Delays">
-              Dates are estimates. Cronus is not responsible for reasonable delays
+              Dates are estimates. Story Windows & Doors is not responsible for reasonable delays
               caused by weather, government action, inspections, supply or labor.
             </TermClause>
             <TermClause number="9" title="Payment">
@@ -1802,7 +2080,7 @@ export default function ContractDocument() {
               necessarily indicate product failure.
             </TermClause>
             <TermClause number="14" title="Existing Conditions">
-              Cronus is not responsible for pre-existing damage, settling,
+              Story Windows & Doors is not responsible for pre-existing damage, settling,
               moisture or defective structures outside the contracted scope.
             </TermClause>
             <TermClause number="15" title="Collection and Enforcement">
@@ -1816,7 +2094,7 @@ export default function ContractDocument() {
           </div>
 
           <div className="mt-6 rounded-lg border-2 border-[#222222] p-4 text-[9px] font-semibold leading-[1.5]">
-            Cronus must have all final legal terms, warranty language,
+            Story Windows & Doors must have all final legal terms, warranty language,
             cancellation procedures and statutory notices reviewed by a
             Florida-licensed construction attorney before production use.
           </div>
@@ -1928,10 +2206,10 @@ function ContractPage({
     <section className="contract-page relative mx-auto mb-8 flex min-h-[11in] w-[8.5in] flex-col bg-white px-[0.48in] pb-[0.42in] pt-[0.42in] shadow-xl print:mb-0">
       <div className="mb-4 flex items-center justify-between border-b-2 border-[#222222] pb-3">
         <div className="flex items-center gap-3">
-          <CronusLogo className="h-[72px] w-[135px] shrink-0 object-left" />
+          <StoryLogo className="h-[72px] w-[135px] shrink-0 object-left" />
           <div>
             <p className="text-[7px] font-semibold uppercase tracking-[0.16em] text-[#9A8050]">
-              Cronus Windows & Doors
+              Story Windows & Doors
             </p>
             <h1 className="mt-1 text-[17px] font-semibold">{title}</h1>
           </div>
@@ -1953,12 +2231,12 @@ function ContractPage({
   )
 }
 
-function CronusLogo({ className = '' }: { className?: string }) {
-  if (!cronusLogoUrl) {
+function StoryLogo({ className = '' }: { className?: string }) {
+  if (!storyLogoUrl) {
     return (
       <div className={className}>
         <p className="text-[15px] font-bold uppercase tracking-[0.15em]">
-          Cronus
+          Story
         </p>
         <p className="text-[6px] font-semibold uppercase tracking-[0.18em] text-[#9A8050]">
           Windows & Doors
@@ -1969,8 +2247,8 @@ function CronusLogo({ className = '' }: { className?: string }) {
 
   return (
     <img
-      src={cronusLogoUrl}
-      alt="Cronus Windows & Doors"
+      src={storyLogoUrl}
+      alt="Story Windows & Doors"
       className={`object-contain ${className}`}
     />
   )
@@ -2261,56 +2539,31 @@ function TermClause({
   )
 }
 
-function ProductDiagram({ category }: { category: string }) {
-  const normalized = category.toLowerCase()
-  const isDoor = normalized.includes('door')
-  const isSlider =
-    normalized.includes('slider') || normalized.includes('sliding')
-  const isCasement = normalized.includes('casement')
-  const isHung =
-    normalized.includes('double') ||
-    normalized.includes('single hung') ||
-    normalized.includes('hung')
-
+function ProductImage({
+  src,
+  label,
+}: {
+  src: string
+  label: string
+}) {
   return (
-    <div className="w-[145px]">
-      <div
-        className={`relative mx-auto border-[3px] border-[#333333] ${isDoor ? 'h-[130px] w-[82px]' : 'h-[100px] w-[120px]'
-          }`}
-      >
-        {isSlider ? (
-          <>
-            <div className="absolute inset-y-0 left-1/2 border-l-2 border-[#555555]" />
-            <div className="absolute bottom-2 left-2 top-2 border-r border-[#777777]" />
-            <div className="absolute bottom-2 right-2 top-2 border-l border-[#777777]" />
-          </>
-        ) : null}
-
-        {isCasement ? (
-          <>
-            <div className="absolute bottom-2 left-2 right-2 top-2 border border-[#777777]" />
-            <div className="absolute bottom-2 left-2 right-2 top-2 origin-bottom-left rotate-[35deg] border-l border-[#777777]" />
-          </>
-        ) : null}
-
-        {isHung ? (
-          <>
-            <div className="absolute inset-x-0 top-1/2 border-t-2 border-[#555555]" />
-            <div className="absolute inset-x-4 top-[46%] border-t border-[#777777]" />
-            <div className="absolute inset-x-4 bottom-[46%] border-t border-[#777777]" />
-          </>
-        ) : null}
-
-        {!isSlider && !isCasement && !isHung ? (
-          <div className="absolute inset-2 border border-[#777777]" />
-        ) : null}
-
-        {isDoor ? (
-          <div className="absolute right-2 top-1/2 h-2 w-2 rounded-full bg-[#333333]" />
-        ) : null}
+    <div className="w-[190px] shrink-0">
+      <div className="flex h-[145px] items-center justify-center overflow-hidden rounded-md border border-[#D8D3C8] bg-white p-2">
+        {src ? (
+          <img
+            src={src}
+            alt={label || 'Product'}
+            className="max-h-full max-w-full object-contain"
+          />
+        ) : (
+          <div className="text-center text-[8px] font-bold uppercase text-[#777777]">
+            Product image
+          </div>
+        )}
       </div>
+
       <p className="mt-2 text-center text-[8px] font-bold uppercase tracking-[0.08em]">
-        {category || 'Product'}
+        {label || 'Product'}
       </p>
     </div>
   )

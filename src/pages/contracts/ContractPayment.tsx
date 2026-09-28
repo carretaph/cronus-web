@@ -174,9 +174,7 @@ export default function ContractPayment() {
       ...defaultPaymentForm,
       ...savedPayment,
       paymentMethod: importedPaymentMethod,
-      downPayment: Math.round(
-        toSafeNumber(importedDownPayment),
-      ),
+      downPayment: toSafeNumber(importedDownPayment),
       loanTermMonths:
         savedPayment.loanTermMonths ??
         (importedPaymentMethod === '120-months'
@@ -201,23 +199,20 @@ export default function ContractPayment() {
     return () => window.clearTimeout(timer)
   }, [paymentForm, handoff])
 
-  const projectTotal = Math.round(
-    toSafeNumber(handoff?.projectTotal),
-  )
+  const projectTotal =
+    toSafeNumber(handoff?.projectTotal)
 
   const safeDownPayment = Math.min(
     Math.max(
       0,
-      Math.round(paymentForm.downPayment),
+      paymentForm.downPayment,
     ),
     projectTotal,
   )
 
   const financedBalance = Math.max(
     0,
-    Math.round(
-      projectTotal - safeDownPayment,
-    ),
+    projectTotal - safeDownPayment,
   )
 
   const estimatedMonthlyPayment = useMemo(() => {
@@ -325,11 +320,9 @@ export default function ContractPayment() {
         handoff?.estimateNumber ?? '',
       payment: {
         ...paymentForm,
-        downPayment: Math.round(safeDownPayment),
-        financedBalance: Math.round(financedBalance),
-        estimatedMonthlyPayment: Math.round(
-          estimatedMonthlyPayment,
-        ),
+        downPayment: safeDownPayment,
+        financedBalance,
+        estimatedMonthlyPayment,
         paymentMethodLabel:
           getPaymentMethodLabel(
             paymentForm.paymentMethod,

@@ -145,6 +145,7 @@ export type Opening = {
   impact: boolean
   isActive?: boolean
   mullionCharge: number
+  openingPrice?: number
   products: OpeningProduct[]
   interiorPhotos: string[]
   exteriorPhotos: string[]

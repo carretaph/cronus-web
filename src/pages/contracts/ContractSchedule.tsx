@@ -282,7 +282,7 @@ export default function ContractSchedule() {
 
   function handleNext() {
     saveScheduleDraft()
-    navigate('/portal/contracts/terms')
+    navigate('/portal/contracts/document')
   }
 
   const measurementDate =

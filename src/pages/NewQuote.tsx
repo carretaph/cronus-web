@@ -11,6 +11,8 @@ import slidingMulled3Image from '../assets/windows/sliding-3units.png'
 
 import { getCustomers } from '../services/customersApi'
 import type { ApiCustomer } from '../services/customersApi'
+import { createContract } from '../services/contractsApi'
+import type { ApiContract } from '../services/contractsApi'
 import OpeningManager from './OpeningManager'
 import type { Opening } from './OpeningManager'
 import {
@@ -76,6 +78,17 @@ type StoredQuote = {
   customerName: string
   customerEmail: string
   customerPhone: string
+  customer?: {
+    id: string
+    firstName: string
+    lastName: string
+    phone: string
+    email: string
+    address: string
+    city: string
+    state: string
+    zipCode: string
+  }
   projectForm: ProjectForm
   openings: Opening[]
   discounts: Discount[]
@@ -1093,14 +1106,24 @@ export default function NewQuote() {
       return
     }
 
-    if (selectedCustomerId !== requestedCustomerId) {
-      handleSelectCustomer(requestedCustomerId)
-    }
-  }, [
-    customers,
-    requestedCustomerId,
-    selectedCustomerId,
-  ])
+    const customerAddress = [
+      requestedCustomer.address,
+      requestedCustomer.city,
+      requestedCustomer.state,
+      requestedCustomer.zipCode,
+    ]
+      .filter(Boolean)
+      .join(', ')
+
+    setSelectedCustomerId(requestedCustomerId)
+
+    setProjectForm((currentForm) => ({
+      ...currentForm,
+      projectName:
+        `${requestedCustomer.firstName} ${requestedCustomer.lastName}`.trim(),
+      projectAddress: customerAddress,
+    }))
+  }, [customers, requestedCustomerId])
 
   function ensureEstimateNumber() {
     if (estimateNumber) {
@@ -1142,6 +1165,21 @@ export default function NewQuote() {
         quote.estimateNumber === assignedEstimateNumber,
     )
 
+    const pricedOpenings = openings.map((opening) => ({
+      ...opening,
+      openingPrice:
+        opening.products.reduce(
+          (total, product) =>
+            total +
+            calculateProductPrice(
+              opening,
+              product,
+              projectForm.projectType,
+            ),
+          0,
+        ) + (opening.mullionCharge || 0),
+    }))
+
     const storedQuote: StoredQuote = {
       id: existingQuote?.id ?? assignedEstimateNumber,
       estimateNumber: assignedEstimateNumber,
@@ -1149,8 +1187,21 @@ export default function NewQuote() {
       customerName,
       customerEmail: selectedCustomer?.email ?? '',
       customerPhone: selectedCustomer?.phone ?? '',
+      customer: selectedCustomer
+        ? {
+            id: selectedCustomer.id,
+            firstName: selectedCustomer.firstName,
+            lastName: selectedCustomer.lastName,
+            phone: selectedCustomer.phone,
+            email: selectedCustomer.email,
+            address: selectedCustomer.address,
+            city: selectedCustomer.city,
+            state: selectedCustomer.state,
+            zipCode: selectedCustomer.zipCode,
+          }
+        : undefined,
       projectForm,
-      openings,
+      openings: pricedOpenings,
       discounts,
       selectedFinancingId,
       downPayment,
@@ -1197,11 +1248,30 @@ export default function NewQuote() {
     )
   }
 
-  function handleOrderNow() {
+  async function handleOrderNow() {
     const storedQuote = saveQuoteToHistory(
       'Converted to Contract',
       'Sale',
     )
+
+    const now = new Date()
+
+    const year = now.getFullYear()
+
+    const month = String(
+      now.getMonth() + 1,
+    ).padStart(2, '0')
+
+    const day = String(
+      now.getDate(),
+    ).padStart(2, '0')
+
+    const randomCode = Math.floor(
+      1000 + Math.random() * 9000,
+    )
+
+    const newContractNumber =
+      `CON-${year}${month}${day}-${randomCode}`
 
     // Siempre comenzar un contrato completamente nuevo
     localStorage.removeItem(
@@ -1214,7 +1284,7 @@ export default function NewQuote() {
 
     const contractDraft = {
       ...storedQuote,
-      contractNumber: `CON-${storedQuote.estimateNumber}`,
+      contractNumber: newContractNumber,
       contractStatus: 'Draft',
       convertedAt: new Date().toISOString(),
     }
@@ -1223,6 +1293,46 @@ export default function NewQuote() {
       contractHandoffStorageKey,
       JSON.stringify(contractDraft),
     )
+
+    localStorage.setItem(
+      'cronus_contract_draft_v1',
+      JSON.stringify(contractDraft),
+    )
+
+    const apiContract: ApiContract = {
+      id:
+        typeof crypto !== 'undefined' &&
+        typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `contract-${Date.now()}`,
+      contractNumber: newContractNumber,
+      estimateNumber: storedQuote.estimateNumber,
+      customerName: storedQuote.customerName,
+      customerEmail: storedQuote.customerEmail,
+      projectTotal: storedQuote.projectTotal,
+      status: 'Draft',
+      workflowStatus: 'Draft',
+      contractJson: JSON.stringify(contractDraft),
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+      completedAt: '',
+      executedAt: '',
+      source: 'contract-wizard',
+      version: 1,
+    }
+
+    try {
+      await createContract(apiContract)
+    } catch (error) {
+      console.error(
+        'Unable to save draft contract to backend:',
+        error,
+      )
+
+      window.alert(
+        'The contract was saved locally, but the Draft could not be synchronized with the server. Please check your connection and try again.',
+      )
+    }
 
     navigate('/portal/contracts/new')
   }
