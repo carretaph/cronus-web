@@ -7,13 +7,13 @@ import {
   View,
 } from '@react-pdf/renderer'
 
-import awningImage from '../../assets/windows/Plygem/awning.png'
-import casementImage from '../../assets/windows/Plygem/casement.png'
+import awningImage from '../../assets/windows/awning-house.png'
+import casementImage from '../../assets/windows/casement.png'
 import doubleHungImage from '../../assets/windows/double-hung-house.png'
-import geometricImage from '../../assets/windows/Plygem/geometric.png'
-import pictureImage from '../../assets/windows/Plygem/picture.png'
-import singleHungImage from '../../assets/windows/Plygem/singlehung.png'
-import slidingImage from '../../assets/windows/Plygem/sliding.png'
+import geometricImage from '../../assets/windows/specialty-house.png'
+import pictureImage from '../../assets/windows/picture.png'
+const singleHungImage = doubleHungImage
+import slidingImage from '../../assets/windows/sliding.png'
 import doorImage from '../../assets/door-hero.png'
 import storyLogo from '../../assets/story-windows-doors-logo.png'
 
