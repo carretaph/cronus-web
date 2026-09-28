@@ -7,6 +7,10 @@ import {
   type ReactNode,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  getContractByNumber,
+  updateContract,
+} from '../../services/contractsApi'
 
 const contractHandoffStorageKey =
   'cronus_contract_handoff_v1'
@@ -590,9 +594,7 @@ export default function ContractSignatures() {
       }
     }
 
-    localStorage.setItem(
-      contractDraftStorageKey,
-      JSON.stringify({
+    const updatedDraft: Record<string, unknown> = {
         ...parsedDraft,
 
         contractNumber:
@@ -635,8 +637,14 @@ export default function ContractSignatures() {
                 new Date().toISOString(),
             }
           : {}),
-      }),
+      }
+
+    localStorage.setItem(
+      contractDraftStorageKey,
+      JSON.stringify(updatedDraft),
     )
+
+    return updatedDraft
   }
 
   function handleBack() {
@@ -644,7 +652,7 @@ export default function ContractSignatures() {
     navigate('/portal/contracts/terms')
   }
 
-  function handleNext() {
+  async function handleNext() {
     if (!allAcknowledgmentsComplete) {
       setValidationMessage(
         'Complete all required acknowledgments before continuing.',
@@ -671,7 +679,51 @@ export default function ContractSignatures() {
       return
     }
 
-    saveSignaturesDraft()
+    const updatedDraft = saveSignaturesDraft()
+    const contractNumber = String(
+      updatedDraft.contractNumber ?? '',
+    ).trim()
+
+    if (!contractNumber) {
+      setValidationMessage(
+        'Unable to save the contract because the contract number is missing.',
+      )
+      return
+    }
+
+    try {
+      const existing =
+        await getContractByNumber(contractNumber)
+
+      if (!existing) {
+        throw new Error(
+          `Contract ${contractNumber} was not found.`,
+        )
+      }
+
+      await updateContract(existing.id, {
+        ...existing,
+        contractJson: JSON.stringify(updatedDraft),
+        updatedAt: new Date().toISOString(),
+      })
+    } catch (error) {
+      console.error(
+        'Unable to save contract signatures:',
+        error,
+      )
+
+      setValidationMessage(
+        'Unable to save the contract signatures. Please try again.',
+      )
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      })
+
+      return
+    }
+
     navigate('/portal/contracts/complete')
   }
 
@@ -711,7 +763,7 @@ export default function ContractSignatures() {
 
           <div className="w-fit rounded-2xl border border-[#E8E4DD] bg-white px-5 py-4">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#999999]">
-              Step 7 of 8
+              Step 8 of 8
             </p>
 
             <p className="mt-1 text-sm font-medium text-[#555555]">

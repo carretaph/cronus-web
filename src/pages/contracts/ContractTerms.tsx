@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  getContractByNumber,
+  updateContract,
+} from '../../services/contractsApi'
 
 const contractHandoffStorageKey =
   'cronus_contract_handoff_v1'
@@ -247,7 +251,7 @@ export default function ContractTerms() {
       }
     }
 
-    const updatedDraft = {
+    const updatedDraft: Record<string, unknown> = {
       ...parsedDraft,
       contractNumber:
         handoff?.contractNumber ?? '',
@@ -273,6 +277,8 @@ export default function ContractTerms() {
       contractDraftStorageKey,
       JSON.stringify(updatedDraft),
     )
+
+    return updatedDraft
   }
 
   function handleBack() {
@@ -280,8 +286,46 @@ export default function ContractTerms() {
     navigate('/portal/contracts/schedule')
   }
 
-  function handleNext() {
-    saveTermsDraft()
+  async function handleNext() {
+    const updatedDraft = saveTermsDraft()
+    const contractNumber = String(
+      updatedDraft.contractNumber ?? '',
+    ).trim()
+
+    if (!contractNumber) {
+      window.alert(
+        'Unable to save the contract because the contract number is missing.',
+      )
+      return
+    }
+
+    try {
+      const existing =
+        await getContractByNumber(contractNumber)
+
+      if (!existing) {
+        throw new Error(
+          `Contract ${contractNumber} was not found.`,
+        )
+      }
+
+      await updateContract(existing.id, {
+        ...existing,
+        contractJson: JSON.stringify(updatedDraft),
+        updatedAt: new Date().toISOString(),
+      })
+    } catch (error) {
+      console.error(
+        'Unable to save contract terms:',
+        error,
+      )
+
+      window.alert(
+        'Unable to save the contract terms. Please try again.',
+      )
+      return
+    }
+
     navigate('/portal/contracts/signatures')
   }
 
@@ -307,7 +351,7 @@ export default function ContractTerms() {
 
           <div className="rounded-2xl border border-[#E8E4DD] bg-white px-5 py-4">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#999999]">
-              Step 6 of 8
+              Step 7 of 8
             </p>
 
             <p className="mt-1 text-sm font-medium text-[#555555]">
